@@ -1,0 +1,2932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>LoB · Takt Planner — Singapore v12</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f5f5f3;--bg3:#ebebea;--t:#1a1a18;--t2:#6b6b65;--t3:#9c9a92;--bd:rgba(0,0,0,.10);--bd2:rgba(0,0,0,.20)}
+body{height:100vh;display:flex;flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:var(--t);background:var(--bg)}
+.toolbar{display:flex;align-items:center;gap:5px;padding:7px 12px;border-bottom:0.5px solid var(--bd);flex-wrap:wrap;background:var(--bg2);flex-shrink:0}
+.t1{font-size:13px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+.chip{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap;border:0.5px solid transparent}
+.tbtn{font-size:11px;padding:3px 9px;border-radius:5px;border:0.5px solid var(--bd2);cursor:pointer;background:var(--bg);color:var(--t);white-space:nowrap}
+.tbtn:hover{background:var(--bg3)}
+.tbtn.primary{background:#E6F1FB;color:#0C447C;border-color:#185FA5}
+.tbtn.primary:hover{background:#B5D4F4}
+.tbtn.mode-on{background:#FAEEDA;color:#633806;border-color:#BA7517}
+/* settings bar */
+.settings-bar{display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:0.5px solid var(--bd);background:var(--bg2);flex-wrap:wrap;flex-shrink:0}
+.settings-bar label{font-size:11px;color:var(--t2);white-space:nowrap}
+.settings-bar input[type=number]{width:52px;font-size:11px;padding:2px 5px;border:0.5px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t);text-align:center}
+.settings-bar input[type=date]{font-size:11px;padding:2px 5px;border:0.5px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t)}
+.takt-inp{width:52px;font-size:11px;padding:2px 5px;border:0.5px solid #185FA5 !important;border-radius:4px;background:#E6F1FB !important;color:#0C447C !important;text-align:center;font-weight:600}
+.sep{width:1px;height:16px;background:var(--bd2);flex-shrink:0;margin:0 2px}
+/* tabs */
+.tabs{display:flex;border-bottom:0.5px solid var(--bd);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.tab{padding:7px 12px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;color:var(--t2);user-select:none;white-space:nowrap;flex-shrink:0}
+.tab:hover{color:var(--t)}
+.tab.active{border-bottom-color:var(--t);color:var(--t);font-weight:500}
+/* panels */
+.panel{display:none;flex:1;min-height:0}
+.panel.active{display:flex;flex-direction:column;overflow:hidden}
+/* mode bar */
+.mode-bar{padding:5px 10px;font-size:11px;display:none;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.mode-bar.con-on{background:#E1F5EE;color:#085041;border-bottom:0.5px solid #5DCAA5;display:flex}
+.mode-bar.seq-on{background:#EEEDFE;color:#3C3489;border-bottom:0.5px solid #AFA9EC;display:flex}
+.mbtn{font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;border:0.5px solid var(--bd2);background:var(--bg);color:var(--t)}
+.mbtn.ok{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.mbtn.ok2{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC}
+.mbtn.cancel{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}
+/* seq editor */
+.seq-layout{display:flex;flex:1;min-height:0}
+.seq-sidebar{flex:0 0 380px;display:flex;flex-direction:column;border-right:0.5px solid var(--bd);overflow:hidden;min-height:0}
+.seq-hdr{padding:5px 10px;border-bottom:0.5px solid var(--bd);background:var(--bg2);font-size:10px;color:var(--t2);display:flex;align-items:center;gap:6px;flex-shrink:0}
+.seq-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:5px 5px 20px;min-height:0}
+/* trade row */
+.row{margin-bottom:5px;border:1px solid var(--bd2);background:var(--bg);user-select:none;border-radius:6px}
+.row.con-row{border:3px solid #0F6E56;border-left:6px solid #0F6E56;background:linear-gradient(90deg,#e6f7f2 0%,#f9fdfb 30%);box-shadow:0 2px 8px rgba(15,110,86,0.25);position:relative}
+.row.seq-row{border:3px solid #534AB7;border-left:6px solid #534AB7;background:linear-gradient(90deg,#eeecfa 0%,#fafafe 30%);box-shadow:0 2px 8px rgba(83,74,183,0.25);position:relative}
+.row.over-takt{border:2px solid #E24B4A;background:#fff5f5}
+.row.sel-con{outline:2px solid #0F6E56}
+.row.sel-seq{outline:2px solid #534AB7}
+.row.drag-over{border-color:#185FA5;background:#EBF3FC}
+.row-hdr{display:flex;align-items:center;gap:5px;padding:6px 8px;cursor:grab}
+.row-hdr:active{cursor:grabbing}
+.dh{color:var(--t3);font-size:14px;flex-shrink:0;line-height:1}
+.rnum{font-size:10px;color:var(--t2);min-width:18px;font-weight:700;flex-shrink:0}
+.rname{flex:1;font-size:11px;line-height:1.3;overflow:hidden}
+.dur-inp{width:36px;font-size:10px;padding:2px 3px;border:1px solid var(--bd2);border-radius:3px;background:var(--bg);color:var(--t);text-align:center}
+.dur-inp[readonly]{background:var(--bg3);color:var(--t2)}
+.du{font-size:10px;color:var(--t2);white-space:nowrap}
+.takt-warn{font-size:9px;padding:1px 5px;border-radius:3px;background:#FCEBEB;color:#A32D2D;border:1px solid #F7C1C1;font-weight:700;white-space:nowrap;flex-shrink:0}
+.badge{font-size:8px;padding:1px 4px;border-radius:3px;font-weight:700;flex-shrink:0;border:0.5px solid}
+.b-awc{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+.split-btn{font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid #F7C1C1;color:#A32D2D;cursor:pointer;background:#fff;flex-shrink:0}
+.split-btn:hover{background:#FCEBEB}
+/* group type label bar */
+.grp-type-bar{padding:4px 10px;font-size:10px;font-weight:600;border-top:1px solid rgba(0,0,0,.08)}
+.grp-type-bar.con{background:#E1F5EE;color:#085041}
+.grp-type-bar.seq{background:#EEEDFE;color:#3C3489}
+/* member sub-rows */
+.member-row{display:flex;align-items:center;gap:6px;padding:5px 8px 5px 28px;font-size:11px;color:var(--t2);border-top:1px dotted rgba(0,0,0,.08);background:#fff;position:relative}
+.member-row::after{content:'';position:absolute;left:18px;top:50%;width:8px;height:1px;background:rgba(0,0,0,.2)}
+.m-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)}
+.m-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t)}
+.m-over{color:#A32D2D;font-weight:600}
+.rm-sub{font-size:11px;color:#E24B4A;cursor:pointer;padding:0 3px;border:none;background:none;line-height:1;flex-shrink:0}
+.m-bar-wrap{width:44px;height:6px;background:#e8e8e5;border-radius:3px;overflow:hidden;flex-shrink:0}
+.m-bar{height:100%;border-radius:3px}
+/* info panel */
+.info-p{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.stat-g{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.stat-c{background:var(--bg2);border-radius:7px;padding:9px;text-align:center;border:0.5px solid var(--bd)}
+.stat-v{font-size:18px;font-weight:600}
+.stat-l{font-size:10px;color:var(--t2);margin-top:1px}
+.ibox{border-radius:5px;padding:7px 10px;font-size:11px;line-height:1.5;border:0.5px solid}
+.ibox.blue{background:#E6F1FB;color:#0C447C;border-color:#B5D4F4}
+.ibox.green{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.ibox.amber{background:#FAEEDA;color:#633806;border-color:#FAC775}
+.ibox.ok{background:#EAF3DE;color:#27500A;border-color:#C0DD97}
+.ibox.red{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+/* canvas */
+.scroll-p-bare{flex:1;overflow:auto;background:var(--bg);position:relative}
+.ctip{position:absolute;background:var(--bg);border:0.5px solid var(--bd2);border-radius:6px;padding:8px 12px;font-size:11px;pointer-events:none;display:none;z-index:30;min-width:220px;line-height:1.75;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+/* view controls */
+.vctrl{display:flex;align-items:center;gap:7px;padding:5px 12px;border-bottom:0.5px solid var(--bd);background:var(--bg2);flex-wrap:wrap;flex-shrink:0}
+.vctrl label{font-size:11px;color:var(--t2);white-space:nowrap}
+.vctrl select{font-size:11px;padding:2px 5px;border:0.5px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t)}
+/* legend */
+.leg-wrap{display:flex;flex-wrap:wrap;gap:0;padding:4px 12px;border-bottom:0.5px solid var(--bd);background:var(--bg2);flex-shrink:0;max-height:56px;overflow-y:auto}
+.leg-item{display:flex;align-items:center;gap:4px;margin-right:10px;margin-bottom:2px;font-size:10px;color:var(--t2);white-space:nowrap}
+/* stacking alerts */
+.alert-panel{padding:5px 12px;border-bottom:0.5px solid var(--bd);background:var(--bg);flex-shrink:0;display:flex;gap:6px;flex-wrap:wrap;max-height:66px;overflow-y:auto}
+.ai{font-size:10px;padding:2px 7px;border-radius:4px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;border:0.5px solid}
+.ai-stack{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.ai-idle{background:#FAEEDA;color:#633806;border-color:#EF9F27}
+.ai-ok{background:#EAF3DE;color:#27500A;border-color:#97C459}
+/* cal/opt */
+.cal-wrap{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px}
+.card{background:var(--bg);border:0.5px solid var(--bd);border-radius:12px;padding:12px 14px}
+.card h3{font-size:12px;font-weight:600;margin-bottom:8px}
+.ph-chip{font-size:10px;padding:2px 6px;border-radius:4px;background:#FCEBEB;color:#A32D2D;border:0.5px solid #F7C1C1}
+.opt-item{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:0.5px solid var(--bd);font-size:11px;line-height:1.5}
+.opt-item:last-child{border:none}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.apl{font-size:10px;padding:2px 7px;border-radius:4px;border:0.5px solid #185FA5;background:#E6F1FB;color:#0C447C;cursor:pointer;white-space:nowrap}
+.apl:hover{background:#B5D4F4}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+</style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <span class="t1">LoB · Takt Planner</span>
+  <span class="chip" style="background:#EAF3DE;color:#27500A;border-color:#C0DD97">SG 6-day week</span>
+  <span class="chip" id="chip-awc" style="background:#E6F1FB;color:#0C447C;border-color:#B5D4F4"></span>
+  <span class="chip" id="chip-takt" style="background:#FAEEDA;color:#633806;border-color:#FAC775"></span>
+  <span class="chip" id="chip-viol" style="background:#FCEBEB;color:#791F1F;border-color:#F09595;display:none"></span>
+  <span class="chip" id="chip-stack" style="background:#FCEBEB;color:#791F1F;border-color:#F09595;display:none"></span>
+  <div style="flex:1"></div>
+  <button class="tbtn" id="btn-con" onclick="startMode('con')">⇉ Concurrent</button>
+  <button class="tbtn" id="btn-seq" onclick="startMode('seq')">↓ Sequential</button>
+  <button class="tbtn primary" onclick="autoOptimise('A')" title="Group parallel trades so every beat is fully occupied — zero idle time between levels">✦ Optimise: Continuous Flow</button>
+  <button class="tbtn primary" onclick="autoOptimise('A')" title="Group parallel trades so every beat is fully occupied — zero idle time between levels">✶ Continuous Flow</button>
+  <button class="tbtn primary" onclick="autoOptimise('B')" title="Pack short sequential trades to fill each takt beat — minimises total beat count">✶ Beat Packing</button>
+  <div class="sep"></div>
+  <button class="tbtn" onclick="exportAllExcel()" title="Export all tabs to Excel workbook">⤓ Export Excel</button>
+  <label class="tbtn" style="cursor:pointer" title="Import sequence from Excel">
+    ⤒ Import Excel
+    <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+  </label>
+  <button class="tbtn" style="color:#A32D2D;border-color:#E24B4A" onclick="resetAll()" title="Reset all groupings to base trades">↺ Reset All</button>
+</div>
+
+<!-- SETTINGS BAR -->
+<div class="settings-bar">
+  <label>Start</label>
+  <input type="date" id="proj-start" value="2025-09-01" onchange="renderAll()">
+  <div class="sep"></div>
+  <label>Levels</label>
+  <input type="number" class="settings-bar input" id="proj-levels" value="45" min="2" max="100" onchange="renderAll()" style="width:52px;font-size:11px;padding:2px 5px;border:0.5px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t);text-align:center">
+  <label>Units/level</label>
+  <input type="number" id="proj-units" value="8" min="1" max="20" onchange="renderAll()" style="width:52px;font-size:11px;padding:2px 5px;border:0.5px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t);text-align:center">
+  <div class="sep"></div>
+  <label style="font-weight:600;color:#0C447C">Takt time (d)</label>
+  <input type="number" id="proj-takt" value="8" min="1" max="60" step="0.5" onchange="renderAll()" class="takt-inp">
+  <span id="takt-status" style="font-size:10px;font-weight:600"></span>
+  <div class="sep"></div>
+  <span id="settings-summary" style="font-size:10px;color:var(--t2)"></span>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('seq')">Sequence Editor</div>
+  <div class="tab"        onclick="showTab('takt')">Takt Plan</div>
+  <div class="tab"        onclick="showTab('lob')">LoB Chart</div>
+  <div class="tab"        onclick="showTab('stack')">Resource Stacking</div>
+  <div class="tab"        onclick="showTab('matrix')">Location-Time Matrix</div>
+  <div class="tab"        onclick="showTab('cal')">SG Calendar</div>
+  <div class="tab"        onclick="showTab('opt')">Optimiser</div>
+  <div class="tab"        onclick="showTab('hist')">Histogram</div>
+  <div class="tab"        onclick="showTab('flow')">Trade Flow</div>
+  <div class="tab"        onclick="showTab('advisory')">Advisory</div>
+</div>
+
+<!-- SEQUENCE EDITOR -->
+<div id="tab-seq" class="panel active">
+  <div id="mode-bar" class="mode-bar">
+    <span id="mode-lbl"></span>
+    <span id="sel-cnt" style="font-weight:600">0 selected</span>
+    <button class="mbtn ok"  id="btn-mkcon" onclick="confirmGroup('con')" style="display:none">⇉ Create Concurrent Group</button>
+    <button class="mbtn ok2" id="btn-mkseq" onclick="confirmGroup('seq')" style="display:none">↓ Create Sequential Group</button>
+    <button class="mbtn cancel" onclick="cancelMode()">✕ Cancel</button>
+  </div>
+  <div class="seq-layout">
+    <div class="seq-sidebar">
+      <div class="seq-hdr">
+        <span>Drag to reorder · edit WD · select in group modes · red border = exceeds takt</span>
+        <div style="flex:1"></div>
+        <span style="display:flex;gap:5px;align-items:center;font-size:9px">
+          <svg width="10" height="10" viewBox="0 0 10 10"><polygon points="5,1 9,9 1,9" fill="#0F6E56"/></svg><span style="color:#085041">concurrent</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" style="margin-left:4px"><polygon points="5,1 6.5,4 10,4.5 7.5,7 8.2,10 5,8.5 1.8,10 2.5,7 0,4.5 3.5,4" fill="#534AB7"/></svg><span style="color:#3C3489">sequential</span>
+        </span>
+      </div>
+      <div class="seq-list" id="seq-list"></div>
+    </div>
+    <div class="info-p">
+      <div class="stat-g" id="seq-stats"></div>
+      <div id="takt-violations"></div>
+      <div id="conflict-area"></div>
+      <div id="tips-area"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAKT PLAN -->
+<div id="tab-takt" class="panel">
+  <div class="vctrl">
+    <label>Row height</label>
+    <select id="tp-rh" onchange="renderTakt()"><option value="20">Compact</option><option value="28" selected>Normal</option><option value="40">Tall</option></select>
+    <label>Zoom</label>
+    <select id="tp-px" onchange="renderTakt()"><option value="5">Narrow</option><option value="9" selected>Normal</option><option value="14">Wide</option></select>
+    <label>Level step</label>
+    <select id="tp-ls" onchange="renderTakt()"><option value="1" selected>Every level</option><option value="5">Every 5th</option></select>
+    <label>Group labels</label>
+    <select id="tp-gl" onchange="renderTakt()"><option value="full" selected>Full label</option><option value="icon">Icon only</option><option value="none">None</option></select>
+  </div>
+  <div class="leg-wrap" id="takt-legend"></div>
+  <div class="scroll-p-bare" id="takt-wrap"><div class="ctip" id="takt-tip"></div></div>
+</div>
+
+<!-- LOB CHART -->
+<div id="tab-lob" class="panel">
+  <div class="vctrl">
+    <label>Px/day</label>
+    <select id="lob-px" onchange="renderLoB()"><option value="5">Narrow</option><option value="9" selected>Normal</option><option value="14">Wide</option></select>
+    <label>Px/level</label>
+    <select id="lob-pl" onchange="renderLoB()"><option value="8">Compact</option><option value="12" selected>Normal</option><option value="18">Tall</option></select>
+    <label>Level step</label>
+    <select id="lob-ls" onchange="renderLoB()"><option value="1" selected>Every level</option><option value="5">Every 5th</option></select>
+  </div>
+  <div class="leg-wrap" id="lob-legend"></div>
+  <div class="scroll-p-bare" id="lob-wrap"><div class="ctip" id="lob-tip"></div></div>
+</div>
+
+<!-- RESOURCE STACKING -->
+<div id="tab-stack" class="panel">
+  <div class="vctrl">
+    <label>Px/day</label>
+    <select id="st-px" onchange="renderStacking()"><option value="7">Narrow</option><option value="12" selected>Normal</option><option value="20">Wide</option></select>
+    <label>Px/level</label>
+    <select id="st-pl" onchange="renderStacking()"><option value="10">Compact</option><option value="16" selected>Normal</option><option value="24">Tall</option></select>
+    <label>Level step</label>
+    <select id="st-ls" onchange="renderStacking()"><option value="1" selected>Every level</option><option value="5">Every 5th</option></select>
+    <label>Slopes</label>
+    <select id="st-sl" onchange="renderStacking()"><option value="both" selected>Start + Finish</option><option value="start">Start only</option><option value="off">Bars only</option></select>
+    <label>Buffer (d)</label>
+    <select id="st-buf" onchange="renderStacking()"><option value="0">0</option><option value="1" selected>1d</option><option value="2">2d</option><option value="3">3d</option></select>
+  </div>
+  <div class="alert-panel" id="stack-alerts"></div>
+  <div class="leg-wrap"    id="stack-legend"></div>
+  <div class="scroll-p-bare" id="stack-wrap"><div class="ctip" id="stack-tip"></div></div>
+</div>
+
+<!-- LOCATION-TIME MATRIX -->
+<div id="tab-matrix" class="panel">
+  <div class="vctrl">
+    <label>Px/day</label>
+    <select id="mx-px" onchange="renderMatrix()"><option value="5">Narrow</option><option value="9" selected>Normal</option><option value="14">Wide</option></select>
+    <label>Px/level</label>
+    <select id="mx-pl" onchange="renderMatrix()"><option value="8">Compact</option><option value="12" selected>Normal</option><option value="18">Tall</option></select>
+    <label>Level step</label>
+    <select id="mx-ls" onchange="renderMatrix()"><option value="1" selected>Every level</option><option value="5">Every 5th</option></select>
+  </div>
+  <div class="leg-wrap" id="matrix-legend"></div>
+  <div class="scroll-p-bare" id="matrix-wrap"><div class="ctip" id="matrix-tip"></div></div>
+</div>
+
+<!-- HISTOGRAM -->
+<div id="tab-hist" class="panel">
+  <div class="vctrl" style="gap:10px">
+    <label>Bar width</label>
+    <select id="hist-bw" onchange="renderHist()"><option value="40">Narrow</option><option value="60" selected>Normal</option><option value="80">Wide</option></select>
+    <label>Show values</label>
+    <select id="hist-val" onchange="renderHist()"><option value="1" selected>Yes</option><option value="0">No</option></select>
+    <div style="flex:1"></div>
+    <span style="font-size:11px;color:var(--t2)">Click any bar to assign sub-contractor</span>
+  </div>
+  <div style="flex:1;overflow:auto;position:relative;background:var(--bg)" id="hist-wrap">
+    <canvas id="hist-canvas" style="display:block"></canvas>
+    <!-- sub-con modal -->
+    <div id="subcon-modal" style="display:none;position:absolute;z-index:50;background:var(--bg);border:1px solid var(--bd2);border-radius:8px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:220px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px" id="subcon-modal-title">Assign sub-contractor</div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:6px">Select existing or type new:</div>
+      <select id="subcon-select" style="width:100%;font-size:11px;padding:4px;border:1px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t);margin-bottom:6px"></select>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input id="subcon-new" type="text" placeholder="New sub-con name…" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--bd2);border-radius:4px;background:var(--bg);color:var(--t)">
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="applySubcon()" style="flex:1;font-size:11px;padding:4px 8px;border-radius:4px;border:1px solid #185FA5;background:#E6F1FB;color:#0C447C;cursor:pointer;font-weight:600">Assign</button>
+        <button onclick="clearSubcon()" style="font-size:11px;padding:4px 8px;border-radius:4px;border:1px solid var(--bd2);background:var(--bg);color:#A32D2D;cursor:pointer">Clear</button>
+        <button onclick="closeSubconModal()" style="font-size:11px;padding:4px 8px;border-radius:4px;border:1px solid var(--bd2);background:var(--bg);color:var(--t2);cursor:pointer">Cancel</button>
+      </div>
+    </div>
+    <div class="ctip" id="hist-tip"></div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div id="tab-cal" class="panel"><div class="cal-wrap" id="cal-wrap"></div></div>
+<!-- OPTIMISER -->
+<div id="tab-opt" class="panel"><div class="cal-wrap" id="opt-wrap"></div></div>
+
+
+<!-- TRADE FLOW VIEW -->
+<div id="tab-flow" class="panel" style="flex-direction:row;overflow:hidden">
+  <!-- Filter sidebar -->
+  <div style="width:220px;min-width:220px;max-width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:8px;padding:10px;border-right:1px solid var(--bd);overflow:hidden;box-sizing:border-box">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px">
+        <label style="font-size:10px;color:var(--t2);display:block;margin-bottom:3px">Cell width</label>
+        <select id="fl-cw" onchange="renderFlow()" style="width:100%;font-size:11px">
+          <option value="28">Narrow</option>
+          <option value="40" selected>Normal</option>
+          <option value="56">Wide</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:80px">
+        <label style="font-size:10px;color:var(--t2);display:block;margin-bottom:3px">Row height</label>
+        <select id="fl-rh" onchange="renderFlow()" style="width:100%;font-size:11px">
+          <option value="22">Compact</option>
+          <option value="30" selected>Normal</option>
+          <option value="40">Tall</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:10px;color:var(--t2);display:block;margin-bottom:3px">Cell label</label>
+      <select id="fl-sh" onchange="renderFlow()" style="width:100%;font-size:11px">
+        <option value="level">Level number</option>
+        <option value="date">Start date</option>
+        <option value="both">Level + date</option>
+      </select>
+    </div>
+    <div style="height:1px;background:var(--bd);margin:2px 0"></div>
+    <div>
+      <div style="font-weight:700;font-size:10px;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Filter trades</div>
+      <input id="fl-search" type="text" placeholder="Search name…" oninput="buildFlowFilter()"
+        style="width:100%;box-sizing:border-box;font-size:11px;padding:5px 8px;border:0.5px solid var(--bd2);border-radius:5px;background:var(--bg);color:var(--t)">
+    </div>
+    <!-- Quick-select row -->
+    <div style="display:flex;gap:4px">
+      <button onclick="flowSelectAll(true)"  style="flex:1;font-size:10px;padding:3px 0;border-radius:4px;border:0.5px solid var(--bd2);background:var(--bg);cursor:pointer;color:var(--t)">All</button>
+      <button onclick="flowSelectAll(false)" style="flex:1;font-size:10px;padding:3px 0;border-radius:4px;border:0.5px solid var(--bd2);background:var(--bg);cursor:pointer;color:var(--t)">None</button>
+      <button onclick="flowSelectAWC()"      style="flex:1;font-size:10px;padding:3px 0;border-radius:4px;border:0.5px solid #B5D4F4;background:#E6F1FB;cursor:pointer;color:#0C447C">AWC</button>
+    </div>
+    <!-- Sub-con quick-filter pills (populated by buildFlowFilter) -->
+    <div id="fl-subcon-bar" style="display:flex;flex-wrap:wrap;gap:4px;min-height:16px"></div>
+    <!-- Visible count -->
+    <div id="fl-filter-count" style="font-size:10px;color:var(--t2);padding:1px 0"></div>
+    <!-- Trade list -->
+    <div id="fl-filter-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px;min-height:0"></div>
+  </div>
+  <!-- Canvas area -->
+  <div style="flex:1;overflow:auto;position:relative;min-width:0" id="flow-wrap">
+    <canvas id="flow-canvas" style="display:block"></canvas>
+    <div id="flow-tip" style="display:none;position:absolute;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;padding:7px 10px;font-size:11px;font-family:system-ui;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:220px;line-height:1.5;z-index:10"></div>
+  </div>
+</div>
+
+
+<!-- ADVISORY PANEL -->
+<div id="tab-advisory" class="panel">
+  <div class="cal-wrap" id="advisory-wrap" style="padding:14px;gap:14px"></div>
+</div>
+
+<script>
+/* ═══════════════════════ PALETTE ═══════════════════════ */
+var PAL=['#1A6FAD','#0D7A5F','#C04E20','#8F2D56','#4A42A8','#2E6B0A','#7A4508','#961F1F','#06504A','#6B2510','#189E6A','#A86910','#2E7FCC','#518A18','#C04070','#3D1020','#0A3E78','#322D85','#1E1948','#573008','#351E00','#3A1808','#1F4800','#6B1818','#112E00','#621C38','#021E45'];
+function pIdx(r){return r.type==='trade'?r.id:r.members[0].id;}
+function tCol(r){return PAL[pIdx(r)%PAL.length];}
+
+/* ═══════════════════════ BASE DATA ═══════════════════════ */
+var BASE=[
+  {id:0, name:"Ceiling Skimming (Wet Area)",       short:"Ceil Skim",    dur:5,   awc:true},
+  {id:1, name:"Concealed Water Piping",            short:"Water Piping", dur:4,   awc:false},
+  {id:2, name:"Sanitary Piping",                   short:"San Piping",   dur:4,   awc:false},
+  {id:3, name:"Concealed Electrical Piping",       short:"Elec Piping",  dur:5,   awc:false},
+  {id:4, name:"LPCP",                              short:"LPCP",         dur:5,   awc:true},
+  {id:5, name:"MS Door Frame",                     short:"MS Door Fr",   dur:2,   awc:false},
+  {id:6, name:"Waterproofing (Façade Wall)",        short:"WP Façade",    dur:2,   awc:true},
+  {id:7, name:"Plastering / Skimming",             short:"Plastering",   dur:7,   awc:true},
+  {id:8, name:"Non-Cast Window & Bifold",          short:"NC Window",    dur:1.5, awc:false},
+  {id:9, name:"Waterproofing (Wet Area)",          short:"WP Wet Area",  dur:6,   awc:true},
+  {id:10,name:"Wall Tiling (KIT/Bath)",            short:"Wall Tiling",  dur:8,   awc:true},
+  {id:11,name:"Floor Tiling (Kit/Bath/SY & HS)",   short:"Floor Tiling", dur:6,   awc:true},
+  {id:12,name:"Drywall w/ UPVC Door Frame & Elec", short:"Drywall",      dur:8,   awc:true},
+  {id:13,name:"Floor Screeding (Bedrooms)",        short:"Screeding",    dur:4,   awc:true},
+  {id:14,name:"Painting (1st Coat - Sealer)",      short:"Paint 1st",    dur:1,   awc:false},
+  {id:15,name:"Vinyl Flooring",                    short:"Vinyl Flr",    dur:2,   awc:false},
+  {id:16,name:"UPVC Skirting",                     short:"Skirting",     dur:1,   awc:false},
+  {id:17,name:"Toilet Box Up",                     short:"Toilet BoxUp", dur:4,   awc:false},
+  {id:18,name:"UPVC Door Frame (Bath)",            short:"UPVC Dr Bath", dur:2,   awc:false},
+  {id:19,name:"Main Gate",                         short:"Main Gate",    dur:1,   awc:false},
+  {id:20,name:"Main Door",                         short:"Main Door",    dur:1,   awc:false},
+  {id:21,name:"DB Closet",                         short:"DB Closet",    dur:1,   awc:false},
+  {id:22,name:"UPVC Doors",                        short:"UPVC Doors",   dur:2,   awc:false},
+  {id:23,name:"Sanitary Wares",                    short:"San Wares",    dur:4,   awc:false},
+  {id:24,name:"Glazing",                           short:"Glazing",      dur:1,   awc:false},
+  {id:25,name:"Electrical Fittings",               short:"Elec Fit",     dur:4,   awc:false},
+  {id:26,name:"HS Door Frame & Vent Plate",        short:"HS Dr Frame",  dur:1,   awc:false},
+  {id:27,name:"Internal Clothes Rack",             short:"Int Rack",     dur:1,   awc:false},
+  {id:28,name:"External Clothes Rack",             short:"Ext Rack",     dur:1,   awc:false},
+  {id:29,name:"Final Painting",                    short:"Final Paint",  dur:1,   awc:false},
+];
+
+var WDW=6;
+var SG_HOL=new Set(["2025-01-01","2025-01-29","2025-01-30","2025-04-18","2025-05-01","2025-05-12","2025-06-07","2025-08-09","2025-10-20","2025-10-23","2025-12-25","2026-01-01","2026-02-17","2026-02-18","2026-04-03","2026-05-01","2026-05-31","2026-07-17","2026-08-10","2026-10-09","2026-11-11","2026-12-25"]);
+function isWD(d){return d.getDay()!==0&&!SG_HOL.has(d.toISOString().split('T')[0]);}
+function addWD(s,n){var d=new Date(s),r=Math.ceil(n);while(r>0){d.setDate(d.getDate()+1);if(isWD(d))r--;}return d;}
+function fmtDate(d){var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' '+(d.getFullYear()%100);}
+function fmtDateFull(d){var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear();}
+
+/* ═══════════════════════ SETTINGS ═══════════════════════ */
+function getLevels(){return Math.max(2,parseInt(document.getElementById('proj-levels').value)||45);}
+function getUnits(){return Math.max(1,parseInt(document.getElementById('proj-units').value)||8);}
+function getStartDate(){var v=document.getElementById('proj-start').value;return v?new Date(v):new Date('2025-09-01');}
+function getUserTakt(){return Math.max(1,parseFloat(document.getElementById('proj-takt').value)||8);}
+
+/* ═══════════════════════ MODEL ═══════════════════════ */
+var rows=BASE.map(function(t){return {type:'trade',id:t.id,name:t.name,short:t.short,dur:t.dur,awc:t.awc,selected:false};});
+var mode=null,dragSrc=null;
+/* subcon[tradeId] = { name: string } — user-assigned sub-contractor per trade id */
+var subcon={};
+/* AWC is always sub-con id 'AWC'; user can add custom ones */
+var SUBCON_COLORS={'AWC':'#0C447C'};
+function getSubcon(tid){return subcon[tid]||null;}
+function setSubcon(tid,name){if(name&&name.trim())subcon[tid]=name.trim();else delete subcon[tid];renderAll();}
+function getAllSubcons(){
+  var s={'AWC':1};
+  for(var _sk in subcon){if(subcon.hasOwnProperty(_sk))s[subcon[_sk]]=1;}
+  var _arr=[];for(var _k in s){if(s.hasOwnProperty(_k))_arr.push(_k);}return _arr;
+}
+
+function rDur(r){
+  if(r.type==='con')return Math.max.apply(null,r.members.map(function(m){return m.dur;}));
+  if(r.type==='seq')return r.members.reduce(function(s,m){return s+m.dur;},0);
+  return r.dur;
+}
+function rAwc(r){return r.awc||(r.members&&r.members.some(function(m){return m.awc;}));}
+function totalWD(){return rows.reduce(function(s,r){return s+rDur(r);},0);}
+function calcTakt(){return getUserTakt();} // user sets takt; bottleneck is advisory
+function computeStarts(){var s=[0];for(var i=1;i<rows.length;i++)s.push(s[i-1]+rDur(rows[i-1]));return s;}
+/* Takt-driven starts: each row occupies ceil(dur/tk) full takt beats.
+   Trade n hands off after exactly tk days — the beat is the unit of flow. */
+function computeTaktStarts(tk){
+  var s=[0];
+  for(var i=1;i<rows.length;i++){
+    var slots=Math.max(1,Math.ceil(rDur(rows[i-1])/tk));
+    s.push(s[i-1]+slots*tk);
+  }
+  return s;
+}
+function bottleneck(){return rows.reduce(function(p,c){return rDur(c)>rDur(p)?c:p;},rows[0]);}
+function getTaktViolations(tk){return rows.filter(function(r){return rDur(r)>tk;});}
+
+/* ═══════════════════════ GROUP MODES ═══════════════════════ */
+function startMode(m){
+  if(mode)cancelMode();mode=m;rows.forEach(function(r){r.selected=false;});
+  var bar=document.getElementById('mode-bar');
+  bar.className='mode-bar '+(m==='con'?'con-on':'seq-on');
+  document.getElementById('mode-lbl').textContent=m==='con'?'⇉ Select trades that run in PARALLEL — duration = max member':'↓ Select trades to chain sequentially — duration = sum';
+  document.getElementById('btn-mkcon').style.display=m==='con'?'':'none';
+  document.getElementById('btn-mkseq').style.display=m==='seq'?'':'none';
+  document.getElementById('btn-con').classList.toggle('mode-on',m==='con');
+  document.getElementById('btn-seq').classList.toggle('mode-on',m==='seq');
+  renderSeqList();
+}
+function cancelMode(){
+  mode=null;rows.forEach(function(r){r.selected=false;});
+  document.getElementById('mode-bar').className='mode-bar';
+  document.getElementById('btn-con').classList.remove('mode-on');
+  document.getElementById('btn-seq').classList.remove('mode-on');
+  renderSeqList();
+}
+function toggleSel(i){
+  if(!mode)return;
+  rows[i].selected=!rows[i].selected;
+  document.getElementById('sel-cnt').textContent=rows.filter(function(r){return r.selected;}).length+' selected';
+  renderSeqList();
+}
+function confirmGroup(type){
+  var sel=rows.filter(function(r){return r.selected;});
+  if(sel.length<2){alert('Select at least 2 trades.');return;}
+  var mems=[];for(var _ci=0;_ci<sel.length;_ci++){var _sr=sel[_ci];if(_sr.type==='trade'){mems.push({id:_sr.id,name:_sr.name,short:_sr.short,dur:_sr.dur,awc:_sr.awc});}else if(_sr.members){for(var _cj=0;_cj<_sr.members.length;_cj++)mems.push(_sr.members[_cj]);}}var members=mems;
+  var dur=type==='con'?Math.max.apply(null,members.map(function(m){return m.dur;})):members.reduce(function(s,m){return s+m.dur;},0);
+  var grpName=(type==='con'?'[∥] ':'[→] ')+members.map(function(m){return m.short;}).join('+');var grpShort=(type==='con'?'∥ ':'→ ')+members.map(function(m){return m.short;}).join('+');var grpAwc=members.some(function(m){return m.awc;});var g={type:type,id:'g'+Date.now(),name:grpName,short:grpShort,dur:dur,awc:grpAwc,members:members,selected:false};
+  var idxs=[];for(var _ii=0;_ii<rows.length;_ii++){if(rows[_ii].selected)idxs.push(_ii);}
+  rows.splice(idxs[0],1,g);
+  // Remove remaining selected rows from highest to lowest index. No offset needed: splice with replacement keeps array length stable for the first call.
+  for(var i=idxs.length-1;i>=1;i--)rows.splice(idxs[i],1);
+  cancelMode();renderAll();
+}
+function splitRow(i){var r=rows[i];if(r.type==='trade')return;var _nr=[];for(var _mi=0;_mi<r.members.length;_mi++){var _m=r.members[_mi];_nr.push({type:'trade',id:_m.id,name:_m.name,short:_m.short,dur:_m.dur,awc:_m.awc,selected:false});}rows.splice.apply(rows,[i,1].concat(_nr));renderAll();}
+function removeMember(ri,mi){
+  var r=rows[ri];if(r.type==='trade')return;
+  var rem=r.members.splice(mi,1)[0];
+  if(r.members.length<2){splitRow(ri);return;}
+  r.dur=r.type==='con'?Math.max.apply(null,r.members.map(function(m){return m.dur;})):r.members.reduce(function(s,m){return s+m.dur;},0);
+  r.awc=r.members.some(function(m){return m.awc;});
+  rows.splice(ri+1,0,{type:'trade',id:rem.id,name:rem.name,short:rem.short,dur:rem.dur,awc:rem.awc,selected:false});renderAll();
+}
+function changeDur(i,v){if(rows[i].type==='trade')rows[i].dur=parseFloat(v)||1;renderAll();}
+
+/* ═══════════════════════ LEGEND SHAPE SVGs ═══════════════════════ */
+function legendShape(r,col,sz){
+  if(sz===undefined)sz=14;
+  if(r.type==='con'){
+    // Triangle
+    var h=sz,w=sz;
+    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="flex-shrink:0"><polygon points="'+Math.round(w/2)+',1 '+Math.round(w-1)+','+Math.round(h-1)+' 1,'+Math.round(h-1)+'" fill="'+col+'" stroke="'+col+'" stroke-width="0.5"/></svg>';
+  } else if(r.type==='seq'){
+    // Star (5-point)
+    var cx=sz/2,cy=sz/2,r1=sz/2-1,r2=sz/4;
+    var pts='';for(var i=0;i<10;i++){var a=Math.PI/5*i-Math.PI/2,rad=i%2===0?r1:r2;pts+=(cx+rad*Math.cos(a))+','+(cy+rad*Math.sin(a))+' ';}
+    return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="flex-shrink:0"><polygon points="'+pts.trim()+'" fill="'+col+'" stroke="'+col+'" stroke-width="0.5"/></svg>';
+  } else {
+    // Square
+    return '<svg width="'+sz+'" height="'+Math.round(sz/1.6)+'" viewBox="0 0 '+sz+' '+Math.round(sz/1.6)+'" style="flex-shrink:0"><rect x="0.5" y="0.5" width="'+Math.round(sz-1)+'" height="'+Math.round(sz/1.6-1)+'" rx="2" fill="'+col+'"/></svg>';
+  }
+}
+
+/* ═══════════════════════ MEMBER ROWS HTML (separate fn avoids nested backtick issues) ═══════════════════════ */
+function buildMemberRowsHTML(r,rowIdx,tk){
+  var isCon=r.type==='con';
+  var typeLabel=isCon
+    ? '<span style="font-size:9px;background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5;border-radius:3px;padding:1px 5px;display:inline-block;margin-bottom:3px">⇉ Parallel — '+rDur(r)+'d (max member · '+r.members.length+' trades)</span>'
+    : '<span style="font-size:9px;background:#EEEDFE;color:#3C3489;border:0.5px solid #AFA9EC;border-radius:3px;padding:1px 5px;display:inline-block;margin-bottom:3px">↓ Sequential — '+rDur(r)+'d (sum · '+r.members.length+' trades)</span>';
+  var membersHTML='';
+  r.members.forEach(function(m,mi){
+    var mCol=PAL[m.id%PAL.length];
+    var mOver=m.dur>tk;
+    var barW=Math.min(100,Math.round(m.dur/tk*100));
+    var barCol=mOver?'#E24B4A':m.dur>tk*0.8?'#BA7517':'#189E6A';
+    var shapeSVG=isCon
+      ? '<svg width="8" height="8" viewBox="0 0 8 8" style="flex-shrink:0"><polygon points="4,0.5 7.5,7.5 0.5,7.5" fill="'+mCol+'"/></svg>'
+      : '<svg width="8" height="8" viewBox="0 0 8 8" style="flex-shrink:0"><polygon points="4,0 5.2,2.8 8,3.1 6,5.1 6.5,7.9 4,6.5 1.5,7.9 2,5.1 0,3.1 2.8,2.8" fill="'+mCol+'"/></svg>';
+    var awcBadge=m.awc?'<span style="font-size:7px;padding:1px 3px;border-radius:2px;background:#E6F1FB;color:#0C447C;border:0.5px solid #B5D4F4;font-weight:700;flex-shrink:0">AWC</span>':'';
+    var durLabel='<span style="font-size:10px;color:'+(mOver?'#A32D2D':'var(--t2)')+';white-space:nowrap;flex-shrink:0">'+m.dur+'d'+(mOver?' ⚠':'')+'/'+tk+'d</span>';
+    membersHTML+='<div class="member-row">'
+      +'<span class="m-swatch" style="background:'+mCol+'"></span>'
+      +shapeSVG
+      +'<span class="m-name'+(mOver?' m-over':'')+'" title="'+m.name+'">'+m.name+'</span>'
+      +awcBadge
+      +'<div class="m-bar-wrap" title="'+m.dur+'d / '+tk+'d takt ('+Math.round(m.dur/tk*100)+'%)">'
+      +'<div class="m-bar" style="width:'+barW+'%;background:'+barCol+'"></div></div>'
+      +durLabel
+      +'<button class="rm-sub" onclick="removeMember('+rowIdx+','+mi+')" title="Remove from group">✕</button>'
+      +'</div>';
+  });
+  return '<div class="member-rows"><div style="padding:4px 8px 3px 10px;background:'+(isCon?'#E1F5EE':'#EEEDFE')+'">'+typeLabel+'</div>'+membersHTML+'</div>';
+}
+
+/* ═══════════════════════ SEQ LIST RENDER ═══════════════════════ */
+function renderSeqList(){
+  var list=document.getElementById('seq-list');
+  list.innerHTML='';
+  var tk=getUserTakt();
+
+  rows.forEach(function(r,i){
+    var dur=rDur(r);
+    var awc=rAwc(r);
+    var col=tCol(r);
+    var isCon=(r.type==='con');
+    var isSeq=(r.type==='seq');
+    var isGrp=isCon||isSeq;
+    var over=(dur>tk);
+
+    /* ── card wrapper ── */
+    var card=document.createElement('div');
+    var cardCls='row'+(isCon?' con-row':isSeq?' seq-row':'')+(over&&!r.selected?' over-takt':'')+(r.selected?(isCon?' sel-con':' sel-seq'):'');
+    card.className=cardCls;
+    card.draggable=(!mode);
+
+    /* ── header ── */
+    var hdr=document.createElement('div');
+    hdr.className='row-hdr';
+    /* GROUP TYPE BADGE */
+    if(isGrp){
+      var badge=document.createElement('span');
+      badge.style.cssText='display:inline-flex;align-items:center;gap:3px;padding:1px 8px;border-radius:10px;font-size:9px;font-weight:700;letter-spacing:0.5px;flex-shrink:0;margin-right:4px;';
+      if(isCon){badge.style.background='#0F6E56';badge.style.color='#fff';badge.textContent='∥ CONCURRENT ('+r.members.length+')';}
+      else{badge.style.background='#534AB7';badge.style.color='#fff';badge.textContent='→ SEQUENTIAL ('+r.members.length+')';}
+      hdr.appendChild(badge);
+    }
+    if(mode){hdr.style.cursor='pointer';hdr.onclick=function(){toggleSel(i);};}
+
+    // handle
+    var hdl=document.createElement('span');
+    if(mode){
+      var sc=mode==='con'?'#0F6E56':'#534AB7';
+      hdl.style.cssText='width:13px;height:13px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;cursor:pointer;border:1.5px solid '+(r.selected?sc:'#bbb')+';background:'+(r.selected?sc:'transparent');
+      hdl.textContent=r.selected?'✓':'';
+    }else{
+      hdl.className='dh';hdl.textContent='⠿';
+    }
+    hdr.appendChild(hdl);
+
+    // number
+    var num=document.createElement('span');
+    num.className='rnum';num.textContent=String(i+1);
+    hdr.appendChild(num);
+
+    // shape
+    hdr.insertAdjacentHTML('beforeend',legendShape(r,col,11));
+
+    // name
+    var nm=document.createElement('span');
+    nm.className='rname';
+    nm.style.color=isCon?'#085041':isSeq?'#3C3489':'var(--t)';
+    nm.innerHTML=(isCon?'<b>∥ </b>':isSeq?'<b>→ </b>':'')+r.name;
+    hdr.appendChild(nm);
+
+    if(awc){var ab=document.createElement('span');ab.className='badge b-awc';ab.textContent='AWC';hdr.appendChild(ab);}
+    if(over){var tw=document.createElement('span');tw.className='takt-warn';tw.textContent='+'+((dur-tk).toFixed(1))+'d over takt';hdr.appendChild(tw);}
+
+    var inp=document.createElement('input');
+    inp.className='dur-inp';inp.type='number';inp.min='0.5';inp.max='60';inp.step='0.5';inp.value=String(dur);
+    if(isGrp)inp.readOnly=true;
+    inp.onchange=(function(ii){return function(){changeDur(ii,this.value);};})(i);
+    inp.onclick=function(e){e.stopPropagation();};
+    hdr.appendChild(inp);
+
+    var du=document.createElement('span');du.className='du';du.textContent=dur+'d';hdr.appendChild(du);
+
+    if(isGrp){
+      var sb=document.createElement('button');sb.className='split-btn';sb.textContent='Split';
+      sb.onclick=(function(ii){return function(e){e.stopPropagation();splitRow(ii);};})(i);
+      hdr.appendChild(sb);
+    }
+
+    card.appendChild(hdr);
+
+    /* ── sub-rows for groups ── */
+    if(isGrp && r.members && r.members.length>0){
+      // label bar
+      var lb=document.createElement('p');
+      lb.style.margin='0';
+      lb.style.padding='5px 10px';
+      lb.style.fontSize='10px';
+      lb.style.fontWeight='600';
+      lb.style.borderTop='1px solid rgba(0,0,0,.12)';
+      lb.style.background=isCon?'#E1F5EE':'#EEEDFE';
+      lb.style.color=isCon?'#085041':'#3C3489';
+      lb.textContent=(isCon
+        ?'⇉ Parallel — '+r.members.length+' trades — '+dur+'d (max member)'
+        :'↓ Sequential — '+r.members.length+' trades — '+dur+'d (sum)');
+      card.appendChild(lb);
+
+      r.members.forEach(function(m,mi){
+        var mCol=PAL[m.id%PAL.length];
+        var mOver=m.dur>tk;
+        var barPct=Math.min(100,Math.round(m.dur/tk*100));
+        var barCol=mOver?'#E24B4A':m.dur>tk*0.8?'#BA7517':'#189E6A';
+
+        var mr=document.createElement('p');
+        mr.style.margin='0';
+        mr.style.display='flex';
+        mr.style.alignItems='center';
+        mr.style.gap='6px';
+        mr.style.padding='5px 8px 5px 26px';
+        mr.style.fontSize='11px';
+        mr.style.borderTop='1px dotted rgba(0,0,0,.08)';
+        mr.style.background='#fff';
+        mr.style.color='#444';
+
+        // swatch
+        var sw=document.createElement('span');
+        sw.style.width='9px';sw.style.height='9px';sw.style.borderRadius='2px';
+        sw.style.background=mCol;sw.style.flexShrink='0';sw.style.display='inline-block';
+        mr.appendChild(sw);
+
+        // name
+        var mnm=document.createElement('span');
+        mnm.style.flex='1';mnm.style.overflow='hidden';mnm.style.textOverflow='ellipsis';mnm.style.whiteSpace='nowrap';
+        mnm.style.color=mOver?'#A32D2D':'#1a1a18';
+        mnm.textContent=m.name;
+        mr.appendChild(mnm);
+
+        // bar
+        var bw=document.createElement('span');
+        bw.style.display='inline-block';bw.style.width='40px';bw.style.height='6px';
+        bw.style.background='#e8e8e5';bw.style.borderRadius='3px';bw.style.flexShrink='0';
+        bw.style.overflow='hidden';bw.title=m.dur+'d / '+tk+'d';
+        var bf=document.createElement('span');
+        bf.style.display='block';bf.style.height='100%';
+        bf.style.width=barPct+'%';bf.style.background=barCol;
+        bw.appendChild(bf);mr.appendChild(bw);
+
+        // eject (remove member from group) button
+        var ej=document.createElement('button');
+        ej.style.cssText='font-size:9px;padding:1px 5px;border-radius:3px;border:0.5px solid #ccc;background:#fff;cursor:pointer;color:#666;flex-shrink:0;margin-left:2px;';
+        ej.textContent='↗ eject';
+        ej.title='Remove this trade from the group';
+        ej.onclick=(function(ri2,mi2){return function(e){e.stopPropagation();removeMember(ri2,mi2);};})(i,mi);
+        mr.appendChild(ej);
+
+        // duration
+        var dl=document.createElement('span');
+        dl.style.fontSize='10px';dl.style.whiteSpace='nowrap';dl.style.color=mOver?'#A32D2D':'#9c9a92';
+        dl.textContent=m.dur+'d/'+tk+'d'+(mOver?' ⚠':'');
+        mr.appendChild(dl);
+
+        // remove
+        var rm=document.createElement('button');
+        rm.style.cssText='font-size:11px;color:#E24B4A;cursor:pointer;padding:0 3px;border:none;background:none;line-height:1;flex-shrink:0';
+        rm.textContent='✕';rm.title='Remove';
+        rm.onclick=(function(ri2,mi2){return function(e){e.stopPropagation();removeMember(ri2,mi2);};})(i,mi);
+        mr.appendChild(rm);
+
+        card.appendChild(mr);
+      });
+    }
+
+    /* ── drag events ── */
+    if(!mode){
+      card.addEventListener('dragstart',(function(ii,c){return function(e){dragSrc=ii;setTimeout(function(){c.style.opacity='.4';},0);};})(i,card));
+      card.addEventListener('dragend',(function(c){return function(){c.style.opacity='1';renderAll();};})(card));
+      card.addEventListener('dragover',function(e){e.preventDefault();card.classList.add('drag-over');});
+      card.addEventListener('dragleave',function(){card.classList.remove('drag-over');});
+      card.addEventListener('drop',function(e){
+        e.preventDefault();card.classList.remove('drag-over');
+        if(dragSrc===null||dragSrc===i)return;
+        var a=rows.slice();var m2=a.splice(dragSrc,1)[0];a.splice(i,0,m2);rows=a;renderAll();
+      });
+    }
+
+    list.appendChild(card);
+  });
+}
+
+function renderSeqDetail(){
+  var tc=totalWD(),tk=getUserTakt(),LEVELS=getLevels();
+  var awcD=rows.filter(function(r){return rAwc(r);}).reduce(function(s,r){return s+rDur(r);},0);
+  var viols=getTaktViolations(tk);
+  var bn=bottleneck();
+
+  document.getElementById('seq-stats').innerHTML=
+    '<div class="stat-c"><div class="stat-v">'+tc+'</div><div class="stat-l">WD/unit</div></div>'
+    +'<div class="stat-c"><div class="stat-v" style="color:#185FA5">'+awcD+'</div><div class="stat-l">AWC WD</div></div>'
+    +'<div class="stat-c"><div class="stat-v" style="color:'+(viols.length>0?'#E24B4A':'#189E6A')+'">'+(tk)+'</div><div class="stat-l">Takt (d)</div></div>'
+    +'<div class="stat-c"><div class="stat-v">'+(Math.ceil(tc/WDW))+'</div><div class="stat-l">Cal wks/lvl</div></div>';
+
+  // Takt violations panel
+  document.getElementById('takt-violations').innerHTML=viols.length>0
+    ?'<div class="ibox red"><b>'+viols.length+' trade'+(viols.length>1?'s':'')+' exceed takt ('+tk+'d):</b><br>'+viols.map(function(r){return '<span style="display:inline-flex;align-items:center;gap:4px;margin-top:2px">'+legendShape(r,tCol(r),9)+' '+r.name+': '+rDur(r)+'d (+'+((rDur(r)-tk).toFixed(1))+'d)</span>';}).join('<br>')+'<br><small style="opacity:.8;margin-top:4px;display:block">Increase takt time or reduce cycle time to resolve.</small></div>'
+    :'<div class="ibox ok">✓ All '+rows.length+' trades fit within takt of '+tk+'d.</div>';
+
+  var conflicts=[];
+  for(var i=1;i<rows.length;i++){var p=rows[i-1],c=rows[i];if(rAwc(c)&&!rAwc(p)&&rDur(p)>rDur(c))conflicts.push('AWC "'+c.name+'" follows slower "'+p.name+'"');}
+  document.getElementById('conflict-area').innerHTML=conflicts.length?conflicts.map(function(c){return '<div class="ibox amber">⚠ '+c+'</div>';}).join(''):"<div class='ibox ok'>✓ No AWC sequencing conflicts.</div>";
+
+  var conSave=rows.filter(function(r){return r.type==='con';}).reduce(function(s,r){return s+(r.members.reduce(function(a,m){return a+m.dur;},0)-rDur(r));},0);
+  document.getElementById('tips-area').innerHTML=[
+    conSave>0?'<div class="ibox green">⇉ '+rows.filter(function(r){return r.type==='con';}).length+' concurrent group(s) save '+conSave+'d vs running sequentially.</div>':'',
+    '<div class="ibox blue">Bottleneck: <b>'+bn.name+'</b> at '+rDur(bn)+'d. User takt set to <b>'+tk+'d</b>.</div>'
+  ].filter(Boolean).join('');
+
+  // Toolbar chips
+  document.getElementById('chip-awc').textContent=rows.filter(function(r){return rAwc(r);}).length+' AWC';
+  document.getElementById('chip-takt').textContent='Takt: '+tk+'d';
+  var cv=document.getElementById('chip-viol');
+  cv.style.display=viols.length>0?'':'none';
+  cv.textContent=viols.length+' takt violation'+(viols.length!==1?'s':'');
+  var cs=document.getElementById('chip-stack');
+  var _as1=analyseStacking(1);var issues=_as1.issues;
+  var nStack=issues.filter(function(x){return x.type==='stack';}).length;
+  cs.style.display=nStack>0?'':'none';
+  cs.textContent=nStack+' stacking conflict'+(nStack!==1?'s':'');
+
+  // Takt status label
+  var ts=document.getElementById('takt-status');
+  if(viols.length>0){ts.style.color='#A32D2D';ts.textContent=`⚠ ${viols.length} violation${viols.length!==1?'s':''}`;}
+  else{ts.style.color='#27500A';ts.textContent='✓ all fit';}
+
+  // Settings summary
+  var starts=computeStarts();
+  var totalWD2=starts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+  var end=addWD(getStartDate(),Math.ceil(totalWD2));
+  document.getElementById('settings-summary').textContent=`${LEVELS} levels · ${getUnits()} units/lvl · ~${Math.round(totalWD2)} WD · est. completion ${fmtDateFull(end)}`;
+}
+
+/* ═══════════════════════ STACKING ANALYSIS ═══════════════════════ */
+function analyseStacking(buf){
+  var starts=computeStarts(),tk=getUserTakt();
+  var issues=[];
+  for(var i=0;i<rows.length-1;i++){
+    var r=rows[i],rN=rows[i+1];
+    var gap=starts[i+1]-(starts[i]+rDur(r));
+    if(gap<buf)issues.push({type:'stack',upstream:i,downstream:i+1,gap:Math.round(gap*10)/10,msg:`${r.short} finishes ${gap<0?Math.abs(gap).toFixed(1)+'d AFTER':'only '+gap.toFixed(1)+'d before'} ${rN.short} starts`});
+    if(gap>tk*1.5)issues.push({type:'idle',upstream:i,downstream:i+1,gap,msg:`${gap.toFixed(1)}d idle gap before ${rN.short} can start`});
+  }
+  return{issues,tk,starts};
+}
+
+/* ═══════════════════════ CANVAS HELPERS ═══════════════════════ */
+function mkCanvas(W,H){var c=document.createElement('canvas');c.width=W*2;c.height=H*2;c.style.cssText=`width:${W}px;height:${H}px;display:block`;var ctx=c.getContext('2d');ctx.scale(2,2);return{c,ctx};}
+
+/* Legend with shape icons on canvas */
+function buildLegend(id){
+  var w=document.getElementById(id);w.innerHTML='';
+  rows.forEach(function(r,i){
+    var col=tCol(r);
+    var s=document.createElement('span');s.className='leg-item';
+    s.innerHTML=legendShape(r,col,12)+'<span>'+i+'.</span><span>'+(r.short||r.name).substring(0,16)+'</span>';
+    // show sequence number with correct index
+    s.querySelector('span').textContent=(i+1)+'.';
+    w.appendChild(s);
+  });
+}
+
+/* 3-row time header: Month | Date | WD */
+function drawTimeHeader(ctx,LVL_W,HDR_H,W,totalWD,PX_D,startDate){
+  ctx.fillStyle='#f5f5f3';ctx.fillRect(LVL_W,0,W-LVL_W,HDR_H);
+  ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(LVL_W,HDR_H);ctx.lineTo(W,HDR_H);ctx.stroke();
+  var tx=function(d){return LVL_W+d*PX_D;};
+  var R1=16,R2=18,R3=HDR_H-R1-R2;
+  ctx.strokeStyle='rgba(0,0,0,.08)';ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(LVL_W,R1);ctx.lineTo(W,R1);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(LVL_W,R1+R2);ctx.lineTo(W,R1+R2);ctx.stroke();
+  // Row 3: WD ticks every 5 days
+  var dStep=Math.max(5,Math.round(totalWD/18/5)*5);
+  for(var d=0;d<=totalWD;d+=dStep){
+    var x=tx(d);if(x<=LVL_W||x>=W-2)continue;
+    ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,R1+R2);ctx.lineTo(x,HDR_H);ctx.stroke();
+    ctx.font='400 8px system-ui';ctx.fillStyle='#9c9a92';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('d'+d,x,R1+R2+R3/2);
+  }
+  // Row 2: actual dates every week
+  for(var d=0;d<=totalWD;d+=WDW){
+    var x=tx(d);if(x<=LVL_W||x>=W-3)continue;
+    ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,R1);ctx.lineTo(x,R1+R2);ctx.stroke();
+    var date=addWD(startDate,d);
+    ctx.font='400 8px system-ui';ctx.fillStyle='#6b6b65';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(fmtDate(date),x,R1+R2/2);
+  }
+  // Row 1: Month bands
+  var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var prevKey=-1,monthX=LVL_W,prevLbl='';
+  for(var d=0;d<=totalWD+WDW;d++){
+    var date=addWD(startDate,d);
+    var key=date.getMonth()*10000+date.getFullYear();
+    var x=Math.min(tx(d),W);
+    if(key!==prevKey){
+      if(prevKey!==-1&&x>LVL_W+4){
+        ctx.fillStyle='rgba(0,0,0,.03)';ctx.fillRect(monthX,0,x-monthX,R1);
+        ctx.font='500 9px system-ui';ctx.fillStyle='#444441';ctx.textAlign='left';ctx.textBaseline='middle';
+        ctx.save();ctx.beginPath();ctx.rect(monthX+2,0,x-monthX-4,R1);ctx.clip();
+        ctx.fillText(prevLbl,monthX+3,R1/2);ctx.restore();
+        ctx.strokeStyle='rgba(0,0,0,.12)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,R1);ctx.stroke();
+      }
+      prevKey=key;monthX=Math.max(LVL_W,x);
+      prevLbl=MONTHS[date.getMonth()]+' '+date.getFullYear();
+    }
+    if(d>=totalWD+WDW)break;
+  }
+  ctx.font='400 9px system-ui';ctx.fillStyle='#9c9a92';ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.fillText('Time →',W-3,HDR_H-R3/2-1);
+}
+
+function drawLevelCol(ctx,LVL_W,HDR_H,H,FOOT_H,chartH,BRKT_H,ROW_H,levels){
+  ctx.fillStyle='#f5f5f3';ctx.fillRect(0,0,LVL_W,H);
+  ctx.strokeStyle='rgba(0,0,0,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(LVL_W,0);ctx.lineTo(LVL_W,H-FOOT_H);ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(0,HDR_H);ctx.lineTo(LVL_W,HDR_H);ctx.stroke();
+  ctx.font='400 9px system-ui';ctx.fillStyle='#9c9a92';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Level',LVL_W/2,HDR_H/2);
+  var ry=function(li){return HDR_H+li*(ROW_H+BRKT_H)+BRKT_H;};
+  levels.forEach(function(lvl,li){
+    var y=ry(li);
+    ctx.font=`500 ${ROW_H>=14?'10':'8.5'}px system-ui`;ctx.fillStyle='#6b6b65';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('L'+lvl,LVL_W-5,y+ROW_H/2);
+    ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(0,HDR_H+li*(ROW_H+BRKT_H));ctx.lineTo(LVL_W+5,HDR_H+li*(ROW_H+BRKT_H));ctx.stroke();
+  });
+  ctx.save();ctx.translate(10,HDR_H+chartH/2);ctx.rotate(-Math.PI/2);ctx.font='400 9px system-ui';ctx.fillStyle='#9c9a92';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Location (Level)',0,0);ctx.restore();
+}
+
+/* draw shape icon on canvas for legend/bracket */
+function canvasShape(ctx,type,col,cx,cy,sz){
+  ctx.fillStyle=col;ctx.strokeStyle=col;
+  if(type==='con'){
+    ctx.beginPath();ctx.moveTo(cx,cy-sz/2);ctx.lineTo(cx+sz/2,cy+sz/2);ctx.lineTo(cx-sz/2,cy+sz/2);ctx.closePath();ctx.fill();
+  } else if(type==='seq'){
+    var r1=sz/2,r2=sz/4;
+    ctx.beginPath();
+    for(var i=0;i<10;i++){var a=Math.PI/5*i-Math.PI/2,r=i%2===0?r1:r2;if(i===0)ctx.moveTo(cx+r*Math.cos(a),cy+r*Math.sin(a));else ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));}
+    ctx.closePath();ctx.fill();
+  } else {
+    ctx.fillRect(cx-sz/2,cy-sz/3,sz,sz/1.6);
+  }
+}
+
+/* Draw takt zone overlay: shaded vertical band every takt period */
+function drawTaktZones(ctx,LVL_W,HDR_H,chartH,totalWD,PX_D,tk,footH,H){
+  var tx=function(d){return LVL_W+d*PX_D;};
+  for(var t=0;t<=totalWD;t+=tk){
+    var x1=tx(t),x2=tx(t+tk);
+    if(t/tk%2===0){
+      ctx.fillStyle='rgba(0,0,0,.02)';ctx.fillRect(x1,HDR_H,x2-x1,chartH);
+    }
+    // takt period boundary line
+    ctx.strokeStyle='rgba(186,117,23,0.25)';ctx.lineWidth=0.8;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(tx(t),HDR_H);ctx.lineTo(tx(t),H-footH);ctx.stroke();
+    ctx.setLineDash([]);
+    // label first two
+    if(t/tk<2){
+      ctx.font='600 8px system-ui';ctx.fillStyle='rgba(186,117,23,0.7)';ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText('T'+(t/tk+1),tx(t)+2,HDR_H+2);
+    }
+  }
+  // Takt indicator arrow at top
+  var x1=tx(0),x2=tx(tk);
+  ctx.fillStyle='rgba(239,159,39,0.18)';ctx.fillRect(x1,HDR_H,x2-x1,8);
+  ctx.strokeStyle='#BA7517';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(x1+1,HDR_H+3);ctx.lineTo(x2-1,HDR_H+3);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x1+1,HDR_H+1);ctx.lineTo(x1+1,HDR_H+7);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2-1,HDR_H+1);ctx.lineTo(x2-1,HDR_H+7);ctx.stroke();
+  ctx.font='600 7px system-ui';ctx.fillStyle='#633806';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('Takt='+tk+'d',(x1+x2)/2,HDR_H);
+}
+
+/* Main bars + brackets per level row */
+function drawBarsAndBrackets(ctx,levels,starts,tk,PX_D,ROW_H,BRKT_H,HDR_H,PAD,LVL_W,glMode,showTakt,startDate){
+  var ry=function(li){return HDR_H+li*(ROW_H+BRKT_H)+BRKT_H;};
+  var tx=function(d){return LVL_W+d*PX_D;};
+  var LEVELS=getLevels();
+
+  if(showTakt){
+    var totalWD2=starts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+    // takt zones behind everything
+    for(var t=0;t*tk<=totalWD2+tk;t++){
+      var x1=tx(t*tk),x2=tx((t+1)*tk);
+      if(t%2===0){ctx.fillStyle='rgba(0,0,0,.018)';ctx.fillRect(x1,HDR_H,x2-x1,levels.length*(ROW_H+BRKT_H));}
+      ctx.strokeStyle='rgba(186,117,23,0.18)';ctx.lineWidth=0.7;ctx.setLineDash([3,4]);
+      ctx.beginPath();ctx.moveTo(x1,HDR_H);ctx.lineTo(x1,HDR_H+levels.length*(ROW_H+BRKT_H));ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Takt indicator
+    var x1=tx(0),x2=tx(tk);
+    ctx.fillStyle='rgba(239,159,39,0.15)';ctx.fillRect(x1,HDR_H,x2-x1,7);
+    ctx.strokeStyle='#BA7517';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x1+1,HDR_H+3);ctx.lineTo(x2-1,HDR_H+3);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x1+1,HDR_H+1);ctx.lineTo(x1+1,HDR_H+6);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x2-1,HDR_H+1);ctx.lineTo(x2-1,HDR_H+6);ctx.stroke();
+    ctx.font='600 7px system-ui';ctx.fillStyle='#633806';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText('Takt='+tk+'d',(x1+x2)/2,HDR_H-8);
+  }
+
+  // ── Takt diagonal flow lines: connect each trade's bar across levels ──
+  // Drawn BEFORE bars so bars render on top
+  if(levels.length>1){
+    rows.forEach(function(r,ri){
+      var col=tCol(r);
+      var dur=rDur(r);
+      ctx.strokeStyle=col;ctx.lineWidth=0.9;ctx.globalAlpha=0.20;ctx.setLineDash([]);
+      // top edge
+      ctx.beginPath();
+      for(var li=0;li<levels.length;li++){
+        var lo=(levels[li]-1)*tk;
+        var bx=tx(starts[ri]+lo);
+        var by=ry(li)+PAD;
+        if(li===0){ctx.moveTo(bx,by);}else{ctx.lineTo(bx,by);}
+      }
+      ctx.stroke();
+      // bottom edge
+      ctx.beginPath();
+      for(var li=0;li<levels.length;li++){
+        var lo=(levels[li]-1)*tk;
+        var bx=tx(starts[ri]+dur+lo);
+        var by=ry(li)+ROW_H-PAD;
+        if(li===0){ctx.moveTo(bx,by);}else{ctx.lineTo(bx,by);}
+      }
+      ctx.stroke();
+      ctx.globalAlpha=1;
+    });
+  }
+
+  levels.forEach(function(lvl,li){
+    var y=ry(li),lo=(lvl-1)*tk,bracketY=HDR_H+li*(ROW_H+BRKT_H);
+
+    // Group background shading
+    rows.forEach(function(r,ri){
+      if(r.type!=='con'&&r.type!=='seq')return;
+      var isC=r.type==='con';
+      var x1=tx(starts[ri]+lo),x2=tx(starts[ri]+rDur(r)+lo);
+      ctx.fillStyle=isC?'rgba(15,110,86,0.07)':'rgba(83,74,183,0.07)';
+      ctx.fillRect(x1,bracketY,x2-x1,ROW_H+BRKT_H);
+    });
+
+    // Bars
+    rows.forEach(function(r,ri){
+      var dur=rDur(r),col=tCol(r);
+      var overTakt=dur>tk;
+      var x1=tx(starts[ri]+lo),x2=tx(starts[ri]+dur+lo),bw=x2-x1,bh=ROW_H-PAD*2;
+      ctx.fillStyle=col;ctx.globalAlpha=overTakt?0.95:0.82;ctx.fillRect(x1,y+PAD,bw,bh);ctx.globalAlpha=1;
+      // Red border for takt violation
+      if(overTakt){ctx.strokeStyle='#E24B4A';ctx.lineWidth=1.5;ctx.strokeRect(x1+.5,y+PAD+.5,bw-1,bh-1);}
+      else{ctx.strokeStyle=col;ctx.lineWidth=0.4;ctx.globalAlpha=0.3;ctx.strokeRect(x1+.25,y+PAD+.25,bw-.5,bh-.5);ctx.globalAlpha=1;}
+      // draw takt limit marker inside overflowing bar
+      if(overTakt&&bw>6){
+        var tkX=tx(starts[ri]+lo+tk);
+        ctx.strokeStyle='#fff';ctx.lineWidth=1.2;ctx.setLineDash([2,2]);
+        ctx.beginPath();ctx.moveTo(tkX,y+PAD+1);ctx.lineTo(tkX,y+PAD+bh-1);ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      if(bw>14&&ROW_H>=10){
+        ctx.save();ctx.beginPath();ctx.rect(x1+1,y+PAD,bw-2,bh);ctx.clip();
+        ctx.font='600 '+(ROW_H>=14?'8':'7')+'px system-ui';ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
+        ctx.fillText(bw>52?r.short:(ri+1)+'',x1+2,y+ROW_H/2);ctx.restore();
+      }
+    });
+
+    // Brackets with shape icons
+    rows.forEach(function(r,ri){
+      if(r.type!=='con'&&r.type!=='seq')return;
+      var isC=r.type==='con';
+      var x1=tx(starts[ri]+lo),x2=tx(starts[ri]+rDur(r)+lo),bktCol=isC?'#0F6E56':'#534AB7';
+      ctx.strokeStyle=bktCol;ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.moveTo(x1+1,bracketY+BRKT_H-1);ctx.lineTo(x1+1,bracketY+2);ctx.lineTo(x2-1,bracketY+2);ctx.lineTo(x2-1,bracketY+BRKT_H-1);ctx.stroke();
+      // shape icon in bracket
+      var midX=(x1+x2)/2,midY=bracketY+BRKT_H/2;
+      var bktW=x2-x1;
+      canvasShape(ctx,r.type,bktCol,midX,midY,BRKT_H-3);
+      if(glMode!=='none'&&glMode!=='icon'&&bktW>70){
+        var lbl=r.members.map(function(m){return (m.short||m.name).substring(0,6);}).join(isC?'∥':'→');
+        ctx.font='500 6px system-ui';ctx.fillStyle=bktCol;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(lbl,midX,midY);
+      }
+    });
+  });
+}
+
+function drawFooter(ctx,W,H,FOOT_H,LVL_W,msg){
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(LVL_W,H-FOOT_H);ctx.lineTo(W,H-FOOT_H);ctx.stroke();
+  ctx.fillStyle='#f5f5f3';ctx.fillRect(0,H-FOOT_H,W,FOOT_H);
+  ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(0,H-FOOT_H);ctx.lineTo(W,H-FOOT_H);ctx.stroke();
+  ctx.font='400 8px system-ui';ctx.fillStyle='#9c9a92';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(msg,LVL_W+4,H-FOOT_H/2);
+}
+
+function mountTooltip(wrapId,tipId,canvas,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HDR_H,chartH,PX_D,W,H,buf,startDate){
+  var wrap=document.getElementById(wrapId);
+  var old=wrap.querySelector('canvas');if(old)wrap.removeChild(old);wrap.appendChild(canvas);
+  var tip=document.getElementById(tipId);
+  canvas.onmousemove=function(e){
+    var rect=canvas.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    if(mx<LVL_W||my<HDR_H||my>HDR_H+chartH){tip.style.display='none';return;}
+    var rowSlot=Math.floor((my-HDR_H)/(ROW_H+BRKT_H));
+    if(rowSlot<0||rowSlot>=levels.length){tip.style.display='none';return;}
+    var lvl=levels[rowSlot],lo=(lvl-1)*tk,hd=(mx-LVL_W)/PX_D;
+    var found=null;
+    for(var ri=rows.length-1;ri>=0;ri--){
+      var s2=starts[ri]+lo,e2=s2+rDur(rows[ri]);
+      if(hd>=s2-.3&&hd<=e2+.3){found={r:rows[ri],ri:ri,lvl:lvl,sw:s2,ew:e2};break;}
+    }
+    if(found){
+      var _r=found.r,_ri=found.ri,_lv=found.lvl,_sw=found.sw,_ew=found.ew;
+      var col=tCol(_r);
+      var dur=rDur(_r),overTakt=(dur>tk);
+      var sDate=addWD(startDate,Math.round(_sw)),eDate=addWD(startDate,Math.round(_ew));
+      var prevGap=_ri>0?(_sw-(starts[_ri-1]+rDur(rows[_ri-1])+(_lv-1)*tk)):null;
+      var nextGap=_ri<rows.length-1?(starts[_ri+1]+(_lv-1)*tk-_ew):null;
+      var b=buf||1;
+      var html=''
+        +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">'
+        +'<span style="width:11px;height:11px;border-radius:2px;background:'+col+';display:inline-block;flex-shrink:0"></span>'
+        +'<span style="font-weight:500;color:#1a1a18">'+(_ri+1)+'. '+_r.name+'</span>'
+        +'</div>'
+        +'<div style="color:#6b6b65">Level <b style="color:#1a1a18">L'+_lv+'</b></div>'
+        +'<div style="color:#6b6b65">Start <b style="color:#1a1a18">'+fmtDateFull(sDate)+'</b> (WD '+Math.round(_sw)+')</div>'
+        +'<div style="color:#6b6b65">Finish <b style="color:#1a1a18">'+fmtDateFull(eDate)+'</b> (WD '+Math.round(_ew)+')</div>'
+        +'<div style="color:'+(overTakt?'#A32D2D':'#6b6b65')+'">Duration <b>'+dur+'d</b> / takt <b>'+tk+'d</b>'+(overTakt?' <b style="color:#A32D2D">⚠ EXCEEDS by '+((dur-tk).toFixed(1))+'d</b>':' ✓')+'</div>';
+      if(_r.type==='con'){
+        html+='<div style="color:#085041;font-size:10px;font-weight:500;margin-top:2px">∥ Concurrent ('+_r.members.length+' parallel)</div>'
+          +'<div style="font-size:10px;color:#6b6b65">'+_r.members.map(function(m){return m.name;}).join(', ')+'</div>';
+      }
+      if(_r.type==='seq'){
+        html+='<div style="color:#3C3489;font-size:10px;font-weight:500;margin-top:2px">→ Sequential ('+_r.members.length+' chained)</div>'
+          +'<div style="font-size:10px;color:#6b6b65">'+_r.members.map(function(m){return m.name;}).join(' → ')+'</div>';
+      }
+      if(rAwc(_r)){html+='<div style="color:#0C447C;font-size:10px;font-weight:500;margin-top:2px">AWC sub-con — priority</div>';}
+      if(prevGap!==null){
+        var pgCol=prevGap<0?'#791F1F':prevGap<b?'#633806':'#27500A';
+        html+='<div style="color:'+pgCol+';font-size:10px;margin-top:4px">Gap from prev: <b>'+(Math.round(prevGap*10)/10)+'d</b> '+(prevGap<0?'⚠ STACKING':prevGap<b?'◌ buffer':'✓ clear')+'</div>';
+      }
+      if(nextGap!==null){
+        var ngCol=nextGap<0?'#791F1F':nextGap<b?'#633806':'#27500A';
+        html+='<div style="color:'+ngCol+';font-size:10px">Gap to next: <b>'+(Math.round(nextGap*10)/10)+'d</b> '+(nextGap<0?'⚠ STACKING':nextGap<b?'◌ buffer':'✓ clear')+'</div>';
+      }
+      tip.innerHTML=html;
+      tip.style.display='block';
+      tip.style.left=Math.min(mx+12,W-235)+'px';
+      tip.style.top=Math.max(HDR_H+4,Math.min(my+6,H-220))+'px';
+    } else tip.style.display='none';
+  };
+  canvas.onmouseleave=function(){tip.style.display='none';};
+}
+
+/* ═══════════════════════ RENDER TAKT PLAN ═══════════════════════ */
+function renderTakt(){
+  buildLegend('takt-legend');
+  var ROW_H=parseInt(document.getElementById('tp-rh').value);
+  var PX_D=parseInt(document.getElementById('tp-px').value);
+  var lvlStep=parseInt(document.getElementById('tp-ls').value);
+  var glMode=document.getElementById('tp-gl').value;
+  var tk=getUserTakt(),LEVELS=getLevels();
+  var startDate=getStartDate();
+
+  /* ── Takt-driven starts: each row occupies ceil(dur/tk) beat slots ── */
+  var starts=computeTaktStarts(tk);
+  /* Total duration: last row's start + its beat-slots * tk + (LEVELS-1)*tk */
+  var lastSlots=Math.max(1,Math.ceil(rDur(rows[rows.length-1])/tk));
+  var totalWD2=starts[rows.length-1]+lastSlots*tk+(LEVELS-1)*tk;
+
+  var levels=[];for(var l=1;l<=LEVELS;l+=lvlStep)levels.push(l);
+  var BRKT_H=12,LVL_W=46,HDR_H=56,FOOT_H=20;
+  var chartW=Math.ceil(totalWD2*PX_D),chartH=levels.length*(ROW_H+BRKT_H);
+  var W=LVL_W+chartW,H=HDR_H+chartH+FOOT_H;
+  var _cv=mkCanvas(W,H);var c=_cv.c,ctx=_cv.ctx;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  /* ── Alternating takt beat columns ── */
+  var nBeats=Math.ceil(totalWD2/tk)+1;
+  for(var bt=0;bt<nBeats;bt++){
+    var bx1=LVL_W+bt*tk*PX_D, bx2=LVL_W+(bt+1)*tk*PX_D;
+    if(bt%2===0){ctx.fillStyle='rgba(0,0,0,.018)';ctx.fillRect(bx1,HDR_H,bx2-bx1,chartH);}
+    /* takt grid line */
+    ctx.strokeStyle='rgba(186,117,23,0.22)';ctx.lineWidth=0.8;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(bx1,HDR_H);ctx.lineTo(bx1,HDR_H+chartH);ctx.stroke();
+    ctx.setLineDash([]);
+    /* beat number label */
+    ctx.font='500 8px system-ui';ctx.fillStyle='rgba(99,56,6,0.55)';
+    ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('B'+(bt+1),bx1+2,HDR_H+2);
+  }
+
+  /* ── Week grid lines ── */
+  for(var d=0;d<=totalWD2;d+=WDW){
+    var x=LVL_W+d*PX_D;
+    ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=0.4;
+    ctx.beginPath();ctx.moveTo(x,HDR_H);ctx.lineTo(x,HDR_H+chartH);ctx.stroke();
+  }
+
+  /* ── Level row separators ── */
+  levels.forEach(function(_,li){
+    ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+li*(ROW_H+BRKT_H));ctx.lineTo(W,HDR_H+li*(ROW_H+BRKT_H));ctx.stroke();
+  });
+
+  drawTimeHeader(ctx,LVL_W,HDR_H,W,totalWD2,PX_D,startDate);
+  drawLevelCol(ctx,LVL_W,HDR_H,H,FOOT_H,chartH,BRKT_H,ROW_H,levels);
+
+  /* ── Takt indicator bar at top (first beat width) ── */
+  var tx0=LVL_W,tx1=LVL_W+tk*PX_D;
+  ctx.fillStyle='rgba(239,159,39,0.18)';ctx.fillRect(tx0,HDR_H,tx1-tx0,7);
+  ctx.strokeStyle='#BA7517';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(tx0+1,HDR_H+3);ctx.lineTo(tx1-1,HDR_H+3);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx0+1,HDR_H+1);ctx.lineTo(tx0+1,HDR_H+6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx1-1,HDR_H+1);ctx.lineTo(tx1-1,HDR_H+6);ctx.stroke();
+  ctx.font='600 7px system-ui';ctx.fillStyle='#633806';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('Takt='+tk+'d',(tx0+tx1)/2,HDR_H-9);
+
+  drawBarsAndBrackets(ctx,levels,starts,tk,PX_D,ROW_H,BRKT_H,HDR_H,ROW_H>=26?2:1,LVL_W,glMode,false,startDate);
+
+  /* ── Bottom axis line ── */
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+chartH);ctx.lineTo(W,HDR_H+chartH);ctx.stroke();
+
+  var viols=getTaktViolations(tk);
+  drawFooter(ctx,W,H,FOOT_H,LVL_W,'Takt='+tk+'d · '+rows.length+' rows · '+LEVELS+' levels · '+(viols.length>0?'⚠ '+viols.length+' exceed takt':'✓ all fit')+' · each trade = 1 takt beat · B#=beat number');
+  mountTooltip('takt-wrap','takt-tip',c,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HDR_H,chartH,PX_D,W,H,1,startDate);
+}
+
+/* ═══════════════════════ RENDER LOB ═══════════════════════ */
+function renderLoB(){
+  buildLegend('lob-legend');
+  var PX_D=parseInt(document.getElementById('lob-px').value);
+  var ROW_H=parseInt(document.getElementById('lob-pl').value);
+  var lvlStep=parseInt(document.getElementById('lob-ls').value);
+  var starts=computeStarts(),tk=getUserTakt(),LEVELS=getLevels();
+  var startDate=getStartDate();
+  var totalWD2=starts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+  var levels=[];for(var l=1;l<=LEVELS;l+=lvlStep)levels.push(l);
+  var BRKT_H=8,LVL_W=46,HDR_H=56,FOOT_H=24;
+  var chartW=Math.ceil(totalWD2*PX_D),chartH=levels.length*(ROW_H+BRKT_H);
+  var W=LVL_W+chartW,H=HDR_H+chartH+FOOT_H;
+  var _cv=mkCanvas(W,H);var c=_cv.c,ctx=_cv.ctx;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  levels.forEach(function(_,li){if(li%2===0){ctx.fillStyle='rgba(0,0,0,.015)';ctx.fillRect(LVL_W,HDR_H+li*(ROW_H+BRKT_H),chartW,ROW_H+BRKT_H);}});
+  for(var d=0;d<=totalWD2;d+=WDW){var x=LVL_W+d*PX_D;ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,HDR_H);ctx.lineTo(x,H-FOOT_H);ctx.stroke();}
+  levels.forEach(function(_,li){ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+li*(ROW_H+BRKT_H));ctx.lineTo(W,HDR_H+li*(ROW_H+BRKT_H));ctx.stroke();});
+  drawTimeHeader(ctx,LVL_W,HDR_H,W,totalWD2,PX_D,startDate);
+  drawLevelCol(ctx,LVL_W,HDR_H,H,FOOT_H,chartH,BRKT_H,ROW_H,levels);
+  drawBarsAndBrackets(ctx,levels,starts,tk,PX_D,ROW_H,BRKT_H,HDR_H,ROW_H>=12?2:1,LVL_W,'icon',false,startDate);
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+chartH);ctx.lineTo(W,HDR_H+chartH);ctx.stroke();
+  drawFooter(ctx,W,H,FOOT_H,LVL_W,'LoB Chart · Level (Y) × Time (X) · takt='+tk+'d · red border=exceeds takt · ▲=concurrent ★=sequential');
+  mountTooltip('lob-wrap','lob-tip',c,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HDR_H,chartH,PX_D,W,H,1,startDate);
+}
+
+/* ═══════════════════════ RENDER STACKING ═══════════════════════ */
+function renderStacking(){
+  buildLegend('stack-legend');
+  var PX_D=parseInt(document.getElementById('st-px').value);
+  var ROW_H=parseInt(document.getElementById('st-pl').value);
+  var lvlStep=parseInt(document.getElementById('st-ls').value);
+  var showSlopes=document.getElementById('st-sl').value;
+  var buf=parseFloat(document.getElementById('st-buf').value);
+  var _as2=analyseStacking(buf);var issues=_as2.issues,tk=_as2.tk,starts=_as2.starts;
+  var stackIssues=issues.filter(function(x){return x.type==='stack';});
+  var idleIssues=issues.filter(function(x){return x.type==='idle';});
+  var _upSet={};stackIssues.forEach(function(x){_upSet[x.upstream]=1;});idleIssues.forEach(function(x){_upSet[x.upstream]=1;});var okCnt=Math.max(0,rows.length-1-Object.keys(_upSet).length);
+  var ap=document.getElementById('stack-alerts');
+  ap.innerHTML=issues.length===0?'<span class="ai ai-ok">✓ All transitions clear — no stacking within '+(buf)+'d buffer.</span>':issues.map(function(x){return '<span class="ai '+(x.type==='stack'?'ai-stack':'ai-idle')+'">'+((x.type==='stack')?'▲':'◌')+' '+x.msg+'</span>';}).join('');
+  if(okCnt>0)ap.innerHTML+='<span class="ai ai-ok">✓ '+okCnt+' clean transition'+(okCnt!==1?'s':'')+'</span>';
+
+  var LEVELS=getLevels(),startDate=getStartDate();
+  var totalWD2=starts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+  var levels=[];for(var l=1;l<=LEVELS;l+=lvlStep)levels.push(l);
+  var BRKT_H=7,LVL_W=48,HDR_H=56,FOOT_H=32;
+  var chartW=Math.ceil(totalWD2*PX_D),chartH=levels.length*(ROW_H+BRKT_H);
+  var W=LVL_W+chartW,H=HDR_H+chartH+FOOT_H;
+  var _cv=mkCanvas(W,H);var c=_cv.c,ctx=_cv.ctx;
+  var ry=function(li){return HDR_H+li*(ROW_H+BRKT_H)+BRKT_H;};
+  var txf=function(d){return LVL_W+d*PX_D;};
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  levels.forEach(function(_,li){if(li%2===0){ctx.fillStyle='rgba(0,0,0,.015)';ctx.fillRect(LVL_W,HDR_H+li*(ROW_H+BRKT_H),chartW,ROW_H+BRKT_H);}});
+  for(var d=0;d<=totalWD2;d+=WDW){ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(txf(d),HDR_H);ctx.lineTo(txf(d),H-FOOT_H);ctx.stroke();}
+  levels.forEach(function(_,li){ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+li*(ROW_H+BRKT_H));ctx.lineTo(W,HDR_H+li*(ROW_H+BRKT_H));ctx.stroke();});
+  drawTimeHeader(ctx,LVL_W,HDR_H,W,totalWD2,PX_D,startDate);
+  drawLevelCol(ctx,LVL_W,HDR_H,H,FOOT_H,chartH,BRKT_H,ROW_H,levels);
+  stackIssues.forEach(function(_si){var ui=_si.upstream,di=_si.downstream,gap=_si.gap;
+    levels.forEach(function(_,li){
+      var lo=(levels[li]-1)*tk,y=ry(li);
+      if(gap<=0){ctx.fillStyle='rgba(226,75,74,0.14)';ctx.fillRect(txf(starts[di]+lo),y-BRKT_H,txf(starts[ui]+rDur(rows[ui])+lo)-txf(starts[di]+lo),ROW_H+BRKT_H);}
+      else if(gap<buf){ctx.fillStyle='rgba(239,159,39,0.11)';ctx.fillRect(txf(starts[di]+lo-buf),y-BRKT_H,txf(starts[di]+lo)-txf(starts[di]+lo-buf),ROW_H+BRKT_H);}
+    });
+  });
+  drawBarsAndBrackets(ctx,levels,starts,tk,PX_D,ROW_H,BRKT_H,HDR_H,ROW_H>=16?2:1,LVL_W,'icon',false,startDate);
+  if(showSlopes!=='off'){
+    rows.forEach(function(r,ri){
+      var dur=rDur(r),col=tCol(r),isHot=stackIssues.some(function(x){return x.upstream===ri||x.downstream===ri;});
+      ctx.strokeStyle=col;ctx.lineWidth=isHot?2.2:1.4;ctx.globalAlpha=isHot?0.9:0.55;ctx.setLineDash([]);
+      ctx.beginPath();levels.forEach(function(lvl,li){var x=txf(starts[ri]+(lvl-1)*tk),y=ry(li)+ROW_H/2;li===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+      ctx.stroke();ctx.globalAlpha=1;
+      if(showSlopes==='both'){
+        ctx.strokeStyle=col;ctx.lineWidth=isHot?1.4:0.8;ctx.globalAlpha=isHot?0.65:0.35;ctx.setLineDash([3,3]);
+        ctx.beginPath();levels.forEach(function(lvl,li){var x=txf(starts[ri]+dur+(lvl-1)*tk),y=ry(li)+ROW_H/2;li===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+        ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+      }
+    });
+  }
+  if(buf>0&&showSlopes!=='off'){
+    rows.forEach(function(r,ri){
+      if(ri===0)return;
+      ctx.strokeStyle='rgba(239,159,39,0.38)';ctx.lineWidth=0.7;ctx.setLineDash([2,4]);
+      ctx.beginPath();levels.forEach(function(lvl,li){var x=txf(starts[ri]-buf+(lvl-1)*tk),y=ry(li)+ROW_H/2;li===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+      ctx.stroke();ctx.setLineDash([]);
+    });
+  }
+  stackIssues.forEach(function(_si){var ui=_si.upstream,di=_si.downstream,gap=_si.gap;
+    var x1=txf(starts[di]),x2=txf(starts[ui]+rDur(rows[ui])),y1=ry(0)+ROW_H/2;
+    if(gap<=0){
+      ctx.fillStyle='#E24B4A';ctx.globalAlpha=0.9;ctx.font='600 9px system-ui';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('▲ STACK',(x1+x2)/2,y1-ROW_H/2-BRKT_H-2);ctx.globalAlpha=1;
+      ctx.strokeStyle='#E24B4A';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,y1-2);ctx.lineTo(x2,y1-2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x1+4,y1-5);ctx.lineTo(x1,y1-2);ctx.lineTo(x1+4,y1+1);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x2-4,y1-5);ctx.lineTo(x2,y1-2);ctx.lineTo(x2-4,y1+1);ctx.stroke();
+    } else {
+      ctx.fillStyle='#BA7517';ctx.globalAlpha=0.85;ctx.font='600 8px system-ui';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('◌ '+gap.toFixed(1)+'d',(x1+x2)/2,y1-ROW_H/2-BRKT_H-1);ctx.globalAlpha=1;
+    }
+  });
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+chartH);ctx.lineTo(W,HDR_H+chartH);ctx.stroke();
+  drawFooter(ctx,W,H,FOOT_H,LVL_W,'▲ red=stacking · ◌ amber=within '+buf+'d buffer · solid=start frontier · dashed=finish · takt='+tk+'d · ▲ bracket=concurrent · ★ bracket=sequential');
+  mountTooltip('stack-wrap','stack-tip',c,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HDR_H,chartH,PX_D,W,H,buf,startDate);
+}
+
+/* ═══════════════════════ RENDER MATRIX ═══════════════════════ */
+function renderMatrix(){
+  buildLegend('matrix-legend');
+  var PX_D=parseInt(document.getElementById('mx-px').value);
+  var ROW_H=parseInt(document.getElementById('mx-pl').value);
+  var lvlStep=parseInt(document.getElementById('mx-ls').value);
+  var starts=computeStarts(),tk=getUserTakt(),LEVELS=getLevels();
+  var startDate=getStartDate();
+  var totalWD2=starts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+  var levels=[];for(var l=1;l<=LEVELS;l+=lvlStep)levels.push(l);
+  var BRKT_H=8,LVL_W=46,HDR_H=56,FOOT_H=24;
+  var chartW=Math.ceil(totalWD2*PX_D),chartH=levels.length*(ROW_H+BRKT_H);
+  var W=LVL_W+chartW,H=HDR_H+chartH+FOOT_H;
+  var _cv=mkCanvas(W,H);var c=_cv.c,ctx=_cv.ctx;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  levels.forEach(function(_,li){if(li%2===0){ctx.fillStyle='rgba(0,0,0,.015)';ctx.fillRect(LVL_W,HDR_H+li*(ROW_H+BRKT_H),chartW,ROW_H+BRKT_H);}});
+  for(var d=0;d<=totalWD2;d+=WDW){ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(LVL_W+d*PX_D,HDR_H);ctx.lineTo(LVL_W+d*PX_D,H-FOOT_H);ctx.stroke();}
+  levels.forEach(function(_,li){ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+li*(ROW_H+BRKT_H));ctx.lineTo(W,HDR_H+li*(ROW_H+BRKT_H));ctx.stroke();});
+  drawTimeHeader(ctx,LVL_W,HDR_H,W,totalWD2,PX_D,startDate);
+  drawLevelCol(ctx,LVL_W,HDR_H,H,FOOT_H,chartH,BRKT_H,ROW_H,levels);
+  // takt diagonal guide
+  var ry0=HDR_H+BRKT_H,ryN=HDR_H+(levels.length-1)*(ROW_H+BRKT_H)+BRKT_H;
+  ctx.strokeStyle='#EF9F27';ctx.lineWidth=1;ctx.globalAlpha=0.22;ctx.setLineDash([5,5]);
+  ctx.beginPath();ctx.moveTo(LVL_W+starts[0]*PX_D,ry0+ROW_H/2);ctx.lineTo(LVL_W+(starts[0]+(levels[levels.length-1]-1)*tk)*PX_D,ryN+ROW_H/2);ctx.stroke();
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  ctx.font='400 7px system-ui';ctx.fillStyle='#BA7517';ctx.globalAlpha=0.7;ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText('takt flow →',LVL_W+starts[0]*PX_D+2,ry0-4);ctx.globalAlpha=1;
+  drawBarsAndBrackets(ctx,levels,starts,tk,PX_D,ROW_H,BRKT_H,HDR_H,ROW_H>=12?2:1,LVL_W,'icon',false,startDate);
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+chartH);ctx.lineTo(W,HDR_H+chartH);ctx.stroke();
+  drawFooter(ctx,W,H,FOOT_H,LVL_W,'Location-Time Matrix · Takt='+tk+'d · diagonal=production flow · red border=takt violation · ▲=concurrent · ★=sequential');
+  mountTooltip('matrix-wrap','matrix-tip',c,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HDR_H,chartH,PX_D,W,H,1,startDate);
+}
+
+/* ═══════════════════════ CALENDAR ═══════════════════════ */
+function renderCal(){
+  var LEVELS=getLevels(),UNITS=getUnits(),tk=getUserTakt();
+  var startDate=getStartDate();
+  var viols=getTaktViolations(tk);
+  var starts=computeStarts();
+  var totalWD2=starts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+  var end=addWD(startDate,Math.ceil(totalWD2));
+  var ms=[1,Math.max(2,Math.round(LEVELS*.1)),Math.round(LEVELS*.25),Math.round(LEVELS*.5),Math.round(LEVELS*.75),LEVELS];
+  ms=ms.filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
+  var h25=[['01-01','New Year'],['01-29','CNY Day 1'],['01-30','CNY Day 2'],['04-18','Good Friday'],['05-01','Labour Day'],['05-12','Vesak'],['08-09','National Day'],['10-20','Deepavali'],['12-25','Christmas']];
+  var h26=[['01-01','New Year'],['02-17','CNY Day 1'],['02-18','CNY Day 2'],['04-03','Good Friday'],['05-01','Labour Day'],['05-31','Vesak'],['08-09','National Day'],['11-09','Deepavali'],['12-25','Christmas']];
+
+  var settingsHtml='<div class="card"><h3>Project Settings</h3>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;font-size:11px">'
+    +'<div><span style="color:var(--t2)">Levels</span><br><b>'+LEVELS+'</b></div>'
+    +'<div><span style="color:var(--t2)">Units / level</span><br><b>'+UNITS+'</b></div>'
+    +'<div><span style="color:var(--t2)">Total units</span><br><b>'+(LEVELS*UNITS)+'</b></div>'
+    +'<div><span style="color:var(--t2)">Takt time</span><br><b style="color:'+(viols.length>0?'#A32D2D':'#189E6A')+'">'+tk+'d '+(viols.length>0?'(⚠ '+viols.length+' violation'+(viols.length!==1?'s':'')+')':'✓ all fit')+'</b></div>'
+    +'<div><span style="color:var(--t2)">Project start</span><br><b>'+startDate.toDateString()+'</b></div>'
+    +'<div><span style="color:var(--t2)">Est. completion</span><br><b>'+end.toDateString()+'</b></div>'
+    +'<div><span style="color:var(--t2)">Total WD</span><br><b>~'+Math.round(totalWD2)+' WD</b></div>'
+    +'<div><span style="color:var(--t2)">Duration</span><br><b>~'+Math.ceil(totalWD2/WDW)+' wks ('+(Math.ceil(totalWD2/WDW/4.3)).toFixed(1)+' months)</b></div>'
+    +'<div><span style="color:var(--t2)">WD / week</span><br><b>'+WDW+'d (SG Mon–Sat)</b></div>'
+    +'</div></div>';
+
+  var msHtml='<div class="card"><h3>Level milestone start dates</h3>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'
+    +ms.map(function(lv){
+      var wd=starts[rows.length-1]+(lv-1)*tk;
+      var d=addWD(startDate,Math.round(wd));
+      return '<div style="background:var(--bg2);border-radius:5px;padding:7px;font-size:11px">'
+        +'<div style="font-weight:600;color:#185FA5">Level '+lv+'</div>'
+        +'<div style="color:var(--t2);margin-top:2px">'+d.toDateString()+'</div>'
+        +'</div>';
+    }).join('')+'</div></div>';
+
+  function holHtml(yr,arr){
+    return '<div class="card"><h3>Singapore public holidays '+yr+'</h3>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:4px">'
+      +arr.map(function(h){return '<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg2);border:0.5px solid var(--bd2)">'+yr+'-'+h[0]+' '+h[1]+'</span>';}).join('')
+      +'</div></div>';
+  }
+
+  document.getElementById('cal-wrap').innerHTML='<div class="ibox blue">WD = working days at SG 6-day week. Sundays and public holidays excluded.</div>'
+    +settingsHtml+msHtml+holHtml(2025,h25)+holHtml(2026,h26);
+}
+
+function renderOpt(){
+  var bn=bottleneck(),tc=totalWD(),tk=getUserTakt(),LEVELS=getLevels(),UNITS=getUnits();
+  var _as=analyseStacking(1);var issues=_as.issues;
+  var viols=getTaktViolations(tk);
+  var sugg=[];
+  if(viols.length>0)sugg.push({p:'high',t:'<b>'+(viols.length)+' trade'+(viols.length!==1?'s':'')+' exceed takt='+tk+'d</b>. Increase takt or reduce cycle times.',a:null});
+  sugg.push({p:'high',t:'Bottleneck: "<b>'+bn.name+'</b>" ('+(rDur(bn))+'d). '+(rDur(bn)>tk?'Exceeds takt by '+((rDur(bn)-tk).toFixed(1))+'d.':'Takt OK.'),a:null});
+  sugg.push({p:'high',t:'AWC sub-con must never idle. Preceding trades must finish before AWC mobilises per unit.',a:'batch-awc'});
+  sugg.push({p:'med', t:'Concurrent: Water + Sanitary + Elec Piping in parallel (MEP concealed). Saves ~8d. All fit within takt.',a:'con-mep'});
+  sugg.push({p:'med', t:'Sequential chain: Main Gate + Main Door + DB Closet → single 3d mobilisation.',a:'seq-final'});
+  for(var _si=0;_si<issues.length;_si++){if(issues[_si].type==='stack')sugg.push({p:'high',t:'⚠ Resource stacking: '+issues[_si].msg+'.',a:null});}
+
+
+  var stratHtml='<div class="card"><h3>Auto-Optimise Strategies</h3>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">'
+    /* ── Strategy A ── */
+    +'<div style="border:1.5px solid #0F6E56;border-radius:8px;padding:12px;background:#f0faf5">'
+    +'<div style="font-weight:700;font-size:12px;color:#085041;margin-bottom:4px">∥ Option A — Continuous Flow</div>'
+    +'<div style="font-size:11px;color:#1a3a2a;line-height:1.5;margin-bottom:10px">'
+    +'Groups parallel-compatible trades into <b>concurrent beats</b>. '
+    +'The combined duration fits within one takt, so the next trade can start '
+    +'<b>immediately on the next level — zero waiting time</b> between handoffs. '
+    +'Best when your crew pipeline must stay unbroken.'
+    +'</div>'
+    +'<button class="tbtn primary" style="width:100%;background:#0F6E56;border-color:#0F6E56;color:#fff" onclick="autoOptimise(\'A\')">'
+    +'∥ Apply Continuous Flow</button>'
+    +'</div>'
+    /* ── Strategy B ── */
+    +'<div style="border:1.5px solid #534AB7;border-radius:8px;padding:12px;background:#f4f3fe">'
+    +'<div style="font-weight:700;font-size:12px;color:#3C3489;margin-bottom:4px">→ Option B — Beat Packing</div>'
+    +'<div style="font-size:11px;color:#1a1a3a;line-height:1.5;margin-bottom:10px">'
+    +'Chains short trades sequentially so their <b>sum fills one takt beat</b>. '
+    +'Each packed group occupies exactly one beat slot, '
+    +'minimising total beats needed and <b>eliminating partial-beat gaps</b> on the timeline. '
+    +'Best for maximising resource utilisation per beat.'
+    +'</div>'
+    +'<button class="tbtn primary" style="width:100%;background:#534AB7;border-color:#534AB7;color:#fff" onclick="autoOptimise(\'B\')">'
+    +'→ Apply Beat Packing</button>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin-top:8px;font-size:10px;color:#9c9a92">'
+    +'AWC trades are never grouped. Takt = <b>'+tk+'d</b>. Sequence order preserved. View results in the <b>Trade Flow</b> tab.'
+    +'</div></div>';
+  var statsHtml='<div class="card"><h3>Schedule summary</h3>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">'
+    +'<div class="stat-c"><div class="stat-v">'+tc+'</div><div class="stat-l">WD/unit</div></div>'
+    +'<div class="stat-c"><div class="stat-v" style="color:'+(viols.length>0?'#E24B4A':'#189E6A')+'">'+tk+'</div><div class="stat-l">Takt (WD)</div></div>'
+    +'<div class="stat-c"><div class="stat-v">'+rows.length+'</div><div class="stat-l">Seq rows</div></div>'
+    +'<div class="stat-c"><div class="stat-v">'+Math.ceil(tc/WDW)+'</div><div class="stat-l">Cal wks/lvl</div></div>'
+    +'</div>'
+    +(viols.length===0?'<div class="ibox ok" style="margin-top:8px">✓ All trades fit within takt of '+tk+'d.</div>':'<div class="ibox red" style="margin-top:8px">⚠ '+viols.length+' trade'+(viols.length!==1?'s':'')+' exceed takt: '+viols.map(function(r){return r.short;}).join(', ')+'.</div>')
+    +'</div>';
+
+  var suggHtml='<div class="card"><h3>Optimisation actions</h3>'
+    +sugg.map(function(s){
+      return '<div class="opt-item">'
+        +'<div class="dot" style="background:'+(s.p==='high'?'#E24B4A':s.p==='med'?'#BA7517':'#3B6D11')+'"></div>'
+        +'<div style="flex:1">'+s.t+'</div>'
+        +(s.a?'<button class="apl" onclick="applyAction(\''+s.a+'\')"  >Apply</button>':'')
+        +'</div>';
+    }).join('')+'</div>';
+
+  var awcRows=rows.filter(function(r){return rAwc(r);});
+  var awcHtml='<div class="card"><h3>AWC sub-con sequence</h3>'
+    +'<div class="ibox blue" style="margin-bottom:8px">AWC must never idle. Preceding trades finish before AWC mobilises per unit.</div>'
+    +awcRows.map(function(r){
+      var d=rDur(r),over=(d>tk);
+      return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:0.5px solid var(--bd);font-size:11px">'
+        +legendShape(r,tCol(r),10)
+        +'<span style="flex:1">'+r.name+'</span>'
+        +'<span style="font-size:10px;color:'+(over?'#A32D2D':'var(--t2)')+'">'+d+'d'+(over?' ⚠':'')+'</span>'
+        +(rAwc(r)?'<span style="font-size:8px;padding:1px 4px;background:#E6F1FB;color:#0C447C;border-radius:3px;font-weight:700">AWC</span>':'')
+        +'</div>';
+    }).join('')+'</div>';
+
+  document.getElementById('opt-wrap').innerHTML=stratHtml+statsHtml+suggHtml+awcHtml;
+}
+
+function applyAction(a){
+  if(a==='con-mep'){
+    var ids=[1,2,3],members=ids.map(function(id){var b=BASE[id];return {id:b.id,name:b.name,short:b.short,dur:b.dur,awc:b.awc};});
+    var g={type:'con',id:'gMEP',name:'[\u2225] MEP Concealed Works',short:'\u2225 MEP Works',dur:Math.max.apply(null,members.map(function(m){return m.dur;})),awc:false,members:members,selected:false};
+    var toRm=[];rows.forEach(function(r,i){if(r.type==='trade'&&ids.indexOf(r.id)>=0)toRm.push(i);});
+    if(toRm.length<2){alert('Already grouped.');return;}
+    rows.splice(toRm[0],1,g);for(var i=toRm.length-1;i>=1;i--)rows.splice(toRm[i],1);renderAll();showTab('seq');
+  } else if(a==='seq-final'){
+    var ids=[19,20,21],members=ids.map(function(id){var b=BASE[id];return {id:b.id,name:b.name,short:b.short,dur:b.dur,awc:b.awc};});
+    var g={type:'seq',id:'gFIN',name:'[\u2192] Gate+Door+DB Closet',short:'\u2192 Gate+Door',dur:members.reduce(function(s,m){return s+m.dur;},0),awc:false,members:members,selected:false};
+    var toRm=[];rows.forEach(function(r,i){if(r.type==='trade'&&ids.indexOf(r.id)>=0)toRm.push(i);});
+    if(toRm.length<2){alert('Already grouped.');return;}
+    rows.splice(toRm[0],1,g);for(var i=toRm.length-1;i>=1;i--)rows.splice(toRm[i],1);renderAll();showTab('seq');
+  }
+}
+/* ═══════════════════════ SMART AUTO-OPTIMISER ═══════════════════════
+   Goal: pack trades into groups whose duration is as close to takt as
+   possible WITHOUT exceeding it, while preserving the original sequence
+   order so each trade still flows level → level with minimal interruption.
+
+   Strategy per pass (left-to-right, sequence preserved):
+   1. CONCURRENT grouping — adjacent non-AWC trades that can run in parallel
+      (MEP/piping/electrical/door-frame style). Group dur = max(member dur).
+      Add a member only if max stays ≤ takt. Prefer ≥2 members and fill close
+      to takt (within 80%).
+   2. SEQUENTIAL grouping — adjacent short trades (dur ≤ takt/2, non-AWC) that
+      share one mobilisation. Group dur = sum(member dur). Add while sum ≤ takt.
+      Prefer ≥2 members and fill close to takt (within 80%).
+   AWC trades and trades > takt are never grouped (preserve trade flow & flags).
+*/
+function canConcurrent(t){
+  // Non-AWC, parallel-compatible site work (piping/electrical/frames/glazing/doors)
+  if(t.awc)return false;
+  var k=(t.short+' '+t.name).toLowerCase();
+  return /piping|electric|elec|frame|glazing|vent|rack|door|gate|skirting|fitting|ware|toilet|bifold|window/.test(k);
+}
+function canSequential(t,tk){
+  // Non-AWC short finishing trades
+  return !t.awc && t.dur <= Math.max(1,tk/2);
+}
+function autoOptimise(strategy){
+  if(strategy===undefined)strategy='A';
+  var tk=getUserTakt();
+
+  /* reset to individual trades */
+  rows=BASE.map(function(t){
+    return {type:'trade',id:t.id,name:t.name,short:t.short,dur:t.dur,awc:t.awc,selected:false};
+  });
+
+  var gn=0;
+  var makeGroup=function(type,members){
+    var dur=type==='con'
+      ? Math.max.apply(null,members.map(function(m){return m.dur;}))
+      : members.reduce(function(s,m){return s+m.dur;},0);
+    var tag=type==='con'?'\u2225':'\u2192';
+    var joined=members.map(function(m){return m.short;}).join(type==='con'?' \u2225 ':' \u2192 ');
+    var name='['+tag+'] '+joined;
+    var short=tag+' '+members[0].short+'+'+(members.length-1);
+    return {type:type,id:'g'+(gn++),name:name,short:short,dur:dur,awc:false,
+            members:members.map(function(m){
+              return {id:m.id,name:m.name,short:m.short,dur:m.dur,awc:m.awc};
+            }),selected:false};
+  };
+
+  /* ── Strategy A: Continuous Flow ─────────────────────────────────────
+     Pack parallel-compatible, non-AWC trades into CONCURRENT groups.
+     Each group's max-duration must be ≤ takt so the group fits in ONE
+     beat slot — guaranteeing zero wait between handoffs.
+
+     Resource-stacking protection: a concurrent group uses exactly ONE
+     beat slot (max-dur ≤ tk), so it is never on two levels in the same
+     beat.  AWC trades stay solo — they cannot share crews.
+
+     Gap note: within-beat gaps (dur < tk) are unavoidable for short or
+     AWC trades.  The algorithm eliminates INTER-BEAT idle (no-work beats).
+  ──────────────────────────────────────────────────────────────────── */
+  if(strategy==='A'){
+    var out=[],i=0;
+    while(i<rows.length){
+      var r=rows[i];
+      /* Only non-AWC, concurrent-compatible trades with dur <= tk */
+      if(r.type==='trade' && !r.awc && r.dur<=tk && canConcurrent(r)){
+        var members=[r], maxD=r.dur, j=i+1;
+        /* Look ahead — skip AWC solos to find more parallel partners */
+        while(j<rows.length){
+          var n=rows[j];
+          /* Stop at AWC trade — it must stay solo in its own beat */
+          if(n.awc) break;
+          if(!canConcurrent(n)){j++;continue;} /* skip non-concurrent non-AWC */
+          var nm=Math.max(maxD,n.dur);
+          if(nm>tk) break;          /* would cause stacking (dur>tk) */
+          members.push(n); maxD=nm; j++;
+          if(maxD>=tk*0.95) break;  /* beat fully used */
+        }
+        if(members.length>=2){out.push(makeGroup('con',members));i=j;continue;}
+      }
+      out.push(r);i++;
+    }
+    rows=out;
+  }
+
+  /* ── Strategy B: Beat Packing ─────────────────────────────────────────
+     Pack non-AWC trades SEQUENTIALLY so their SUM fills one takt beat.
+     The key fix over the old algorithm: scan the FULL eligible list
+     (skipping AWC interruptions) to find the best-fit partners.
+     AWC trades are never moved — they stay as solos at their original
+     sequence position.  Non-AWC groups are placed at the position of
+     their FIRST member.
+
+     Algorithm:
+       1. Extract eligible trades (non-AWC, dur < tk) keeping orig index.
+       2. Greedy pack: for each unpacked trade, scan remaining eligible
+          trades (in order, ignoring AWC gaps) and add any that fit.
+       3. Rebuild the full sequence: AWC solos stay in place; non-AWC
+          groups appear at the position of their lowest-index member;
+          consumed members are suppressed.
+  ──────────────────────────────────────────────────────────────────── */
+  if(strategy==='B'){
+    /* Step 1: eligible list preserving original index */
+    var eligible=[];
+    for(var ei=0;ei<rows.length;ei++){
+      var et=rows[ei];
+      if(!et.awc && et.dur<tk) eligible.push({orig:ei,t:et});
+    }
+
+    /* Step 2: greedy pack across the eligible list */
+    var groups={};   /* eligible index -> [eligible indices] */
+    var consumed={};
+    for(var ei=0;ei<eligible.length;ei++){
+      if(consumed[ei]) continue;
+      var erow=eligible[ei].t;
+      var members=[ei]; var total=erow.dur;
+      for(var ej=ei+1;ej<eligible.length;ej++){
+        if(consumed[ej]) continue;
+        var nt=eligible[ej].t;
+        if(total+nt.dur<=tk){
+          members.push(ej); total+=nt.dur;
+          if(total>=tk) break;
+        }
+      }
+      if(members.length>=2){
+        groups[ei]=members;
+        for(var mi=0;mi<members.length;mi++) consumed[members[mi]]=true;
+      } else {
+        consumed[ei]=true;
+      }
+    }
+
+    /* Step 3: rebuild sequence */
+    /* Map orig-row-index -> eligible-list-index */
+    var origToEli={};
+    for(var ei=0;ei<eligible.length;ei++) origToEli[eligible[ei].orig]=ei;
+
+    var out=[];
+    var emittedEli={};
+    for(var ri=0;ri<rows.length;ri++){
+      var r=rows[ri];
+      if(r.awc){out.push(r);continue;}          /* AWC stays solo in place */
+      var eli=origToEli[ri];
+      if(eli===undefined){out.push(r);continue;} /* dur>=tk non-AWC: solo  */
+      if(emittedEli[eli]) continue;              /* already in a group      */
+      if(groups[eli]){
+        /* emit the group */
+        var mems=groups[eli].map(function(k){return eligible[k].t;});
+        out.push(makeGroup('seq',mems));
+        for(var mi=0;mi<groups[eli].length;mi++) emittedEli[groups[eli][mi]]=true;
+      } else {
+        out.push(r); emittedEli[eli]=true;       /* solo non-AWC            */
+      }
+    }
+    rows=out;
+  }
+
+  renderAll(); showTab('flow');
+
+  var cons=rows.filter(function(r){return r.type==='con';}).length;
+  var seqs=rows.filter(function(r){return r.type==='seq';}).length;
+  var viols=getTaktViolations(tk).length;
+  var beats=rows.reduce(function(s,r){return s+Math.max(1,Math.ceil(rDur(r)/tk));},0);
+  var lbl=strategy==='A'?'Continuous Flow (no inter-beat gaps)':'Beat Packing (max trades per beat)';
+  setTimeout(function(){
+    alert('Auto-Optimise \u2014 '+lbl
+      +'\n\n\u2022 '+rows.length+' rows  (was '+BASE.length+')'
+      +'\n\u2022 '+cons+' concurrent group(s)'
+      +'\n\u2022 '+seqs+' sequential group(s)'
+      +'\n\u2022 '+beats+' total takt beats'
+      +'\n\u2022 Takt = '+tk+'d  |  '+viols+' violation(s)'
+      +'\n\nNote: gaps within a beat for short/AWC trades are unavoidable.'
+      +'\nSee Trade Flow tab for the full picture.');
+  },60);
+}
+
+/* ═══════════════════════ HISTOGRAM ═══════════════════════ */
+var histClickRow=null; // row index currently selected for subcon assignment
+
+/* Color palette for sub-contractors — cycles through these */
+var SUBCON_PAL=['#185FA5','#0F6E56','#8F2D56','#633806','#3B6D11','#534AB7','#961F1F','#06504A'];
+function subconColor(name){
+  if(name==='AWC')return'#0C447C';
+  var all=getAllSubcons().filter(function(s){return s!=='AWC';});
+  var idx=all.indexOf(name);
+  return SUBCON_PAL[idx%SUBCON_PAL.length];
+}
+
+function getTradeSubcon(r){
+  // For groups, check if any member has sub-con (show AWC if any awc member)
+  if(r.type==='con'||r.type==='seq'){
+    if(rAwc(r))return'AWC';
+    var ids=r.members.map(function(m){return m.id;});
+    for(var _foi=0;_foi<ids.length;_foi++){var id=ids[_foi];if(subcon[id])return subcon[id];}
+    return null;
+  }
+  if(r.awc)return'AWC';
+  return getSubcon(r.id)||null;
+}
+
+function renderHist(){
+  var wrap=document.getElementById('hist-wrap');
+  var canvas=document.getElementById('hist-canvas');
+  var ctx=canvas.getContext('2d');
+  var tk=getUserTakt();
+  var BAR_W=parseInt(document.getElementById('hist-bw').value);
+  var SHOW_VAL=document.getElementById('hist-val').value==='1';
+  var PAD_L=52,PAD_R=20,PAD_T=48,PAD_B=90;
+  var GAP=8;
+
+  // Build bar data — each row becomes one bar
+  // For sequential groups: stacked bar segments (each member)
+  // For concurrent groups: one bar at height=max, with inner lines for each member
+  // For single trades: one bar
+  var bars=rows.map(function(r,ri){
+    var dur=rDur(r);
+    var col=tCol(r);
+    var sc=getTradeSubcon(r);
+    var over=dur>tk;
+    var segments=[];
+    if(r.type==='seq'){
+      // stacked segments per member
+      var acc=0;
+      segments=r.members.map(function(m){
+        var seg={y0:acc,y1:acc+m.dur,col:PAL[m.id%PAL.length],name:m.name,dur:m.dur};
+        acc+=m.dur;return seg;
+      });
+    } else if(r.type==='con'){
+      // one bar per member at their own height (overlapping / max shown)
+      segments=r.members.map(function(m){return {y0:0,y1:m.dur,col:PAL[m.id%PAL.length],name:m.name,dur:m.dur};});
+    } else {
+      segments=[{y0:0,y1:dur,col,name:r.name,dur}];
+    }
+    return{r,ri,dur,col,over,sc,segments,label:r.short||r.name};
+  });
+
+  var maxY=Math.max.apply(null,[tk*1.5].concat(bars.map(function(b){return b.dur;})))+2;
+  var totalBars=bars.length;
+  var W=PAD_L+totalBars*(BAR_W+GAP)+PAD_R;
+  var H=PAD_T+300+PAD_B;
+
+  canvas.width=W*2;canvas.height=H*2;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);
+
+  var chartH=H-PAD_T-PAD_B;
+  var scaleY=chartH/maxY;
+  var bx=function(i){return PAD_L+i*(BAR_W+GAP);};
+  var by=function(v){return PAD_T+chartH-v*scaleY;};
+
+  // background
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  // horizontal grid
+  var yStep=Math.ceil(maxY/6);
+  for(var y=0;y<=maxY;y+=yStep){
+    var py=by(y);
+    ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(PAD_L,py);ctx.lineTo(W-PAD_R,py);ctx.stroke();
+    ctx.font='400 9px system-ui';ctx.fillStyle='#9c9a92';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText(y+'d',PAD_L-4,py);
+  }
+
+  // Y axis
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(PAD_L,PAD_T);ctx.lineTo(PAD_L,PAD_T+chartH);ctx.stroke();
+
+  // X axis
+  ctx.beginPath();ctx.moveTo(PAD_L,PAD_T+chartH);ctx.lineTo(W-PAD_R,PAD_T+chartH);ctx.stroke();
+
+  // Y axis label
+  ctx.save();ctx.translate(12,PAD_T+chartH/2);ctx.rotate(-Math.PI/2);
+  ctx.font='500 10px system-ui';ctx.fillStyle='#6b6b65';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Cycle time (working days)',0,0);ctx.restore();
+
+  // TAKT line
+  var taktY=by(tk);
+  ctx.strokeStyle='#E24B4A';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(PAD_L,taktY);ctx.lineTo(W-PAD_R,taktY);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font='600 9px system-ui';ctx.fillStyle='#E24B4A';ctx.textAlign='left';ctx.textBaseline='bottom';
+  ctx.fillText('Takt='+tk+'d',PAD_L+4,taktY-2);
+  // takt zone shading above takt
+  ctx.fillStyle='rgba(226,75,74,0.05)';
+  ctx.fillRect(PAD_L,PAD_T,W-PAD_R-PAD_L,taktY-PAD_T);
+
+  // BARS
+  bars.forEach(function(b,i){
+    var x=bx(i);
+    var isCon=b.r.type==='con';
+    var isSeq=b.r.type==='seq';
+
+    if(isSeq){
+      // SEQUENTIAL: colored stacked bars (one on top of another) within one slot
+      // Each member gets its own color, drawn full-width, stacked from bottom
+      b.segments.forEach(function(seg,si){
+        var y1=by(seg.y1),y0=by(seg.y0);
+        ctx.fillStyle=seg.col;ctx.globalAlpha=0.92;
+        ctx.fillRect(x,y1,BAR_W,y0-y1);ctx.globalAlpha=1;
+        // crisp white divider between stacked segments
+        if(si<b.segments.length-1){
+          ctx.strokeStyle='#fff';ctx.lineWidth=2;
+          ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x+BAR_W,y1);ctx.stroke();
+        }
+        // member duration label inside segment if tall enough
+        var segH=y0-y1;
+        if(segH>=14){
+          ctx.font='700 9px system-ui';ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(seg.dur+'d',x+BAR_W/2,y1+segH/2);
+        }
+      });
+      // purple group border (sequential identity)
+      ctx.strokeStyle='#534AB7';ctx.lineWidth=2;
+      ctx.strokeRect(x-.5,by(b.dur)-.5,BAR_W+1,by(0)-by(b.dur)+1);
+      if(b.over){ctx.strokeStyle='#E24B4A';ctx.lineWidth=2.5;ctx.setLineDash([4,3]);
+        ctx.strokeRect(x-2,by(b.dur)-2,BAR_W+4,by(0)-by(b.dur)+4);ctx.setLineDash([]);}
+    } else if(isCon){
+      // CONCURRENT: colored vertical bars side by side within one slot
+      // Each member gets its own color, drawn as a thin full-height bar
+      var n=b.segments.length;
+      var innerGap=2;
+      var totalGap=(n-1)*innerGap;
+      var subW=Math.max(4,(BAR_W-totalGap)/n);
+      b.segments.forEach(function(seg,si){
+        var sx=x+si*(subW+innerGap);
+        var y1=by(seg.y1),y0=by(0);
+        ctx.fillStyle=seg.col;ctx.globalAlpha=0.92;
+        ctx.fillRect(sx,y1,subW,y0-y1);ctx.globalAlpha=1;
+        // duration label on top of each thin bar if wide enough
+        if(subW>=10){
+          ctx.font='700 8px system-ui';ctx.fillStyle='#1a1a18';ctx.textAlign='center';ctx.textBaseline='bottom';
+          ctx.fillText(seg.dur+'d',sx+subW/2,y1-1);
+        }
+      });
+      // green group border (concurrent identity) — encloses the full slot
+      var maxY2=by(b.dur);
+      ctx.strokeStyle='#0F6E56';ctx.lineWidth=2;
+      ctx.strokeRect(x-.5,maxY2-.5,BAR_W+1,by(0)-maxY2+1);
+      if(b.over){ctx.strokeStyle='#E24B4A';ctx.lineWidth=2.5;ctx.setLineDash([4,3]);
+        ctx.strokeRect(x-2,maxY2-2,BAR_W+4,by(0)-maxY2+4);ctx.setLineDash([]);}
+    } else {
+      // Plain trade
+      var y1=by(b.dur),y0=by(0);
+      ctx.fillStyle=b.col;ctx.globalAlpha=0.85;
+      ctx.fillRect(x,y1,BAR_W,y0-y1);ctx.globalAlpha=1;
+      if(b.over){ctx.strokeStyle='#E24B4A';ctx.lineWidth=2;ctx.strokeRect(x+.5,y1+.5,BAR_W-1,y0-y1-1);}
+      else{ctx.strokeStyle=b.col;ctx.lineWidth=0.5;ctx.globalAlpha=0.4;ctx.strokeRect(x+.25,y1+.25,BAR_W-.5,y0-y1-.5);ctx.globalAlpha=1;}
+    }
+
+    // Value label on top of bar
+    if(SHOW_VAL){
+      var topY=by(b.dur);
+      ctx.font='600 9px system-ui';ctx.fillStyle=b.over?'#E24B4A':'#1a1a18';
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText(b.dur+'d',x+BAR_W/2,topY-2);
+    }
+
+    // Sub-con badge below bar
+    if(b.sc){
+      var badgeY=PAD_T+chartH+6;
+      var scCol=subconColor(b.sc);
+      var badgeW=Math.min(BAR_W+4,50);
+      ctx.fillStyle=scCol+'22';
+      ctx.beginPath();ctx.roundRect(x+(BAR_W-badgeW)/2,badgeY,badgeW,13,3);ctx.fill();
+      ctx.strokeStyle=scCol;ctx.lineWidth=0.7;
+      ctx.beginPath();ctx.roundRect(x+(BAR_W-badgeW)/2,badgeY,badgeW,13,3);ctx.stroke();
+      ctx.font='600 7.5px system-ui';ctx.fillStyle=scCol;ctx.textAlign='center';ctx.textBaseline='middle';
+      var lbl=b.sc.length>7?b.sc.substring(0,6)+'…':b.sc;
+      ctx.fillText(lbl,x+BAR_W/2,badgeY+6.5);
+    }
+
+    // X axis label (rotated)
+    ctx.save();
+    var lblY=PAD_T+chartH+(b.sc?24:8);
+    ctx.translate(x+BAR_W/2,lblY);ctx.rotate(-Math.PI/3);
+    ctx.font='400 9px system-ui';ctx.fillStyle='#6b6b65';
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    var lbl2=(b.label||'').substring(0,16);
+    ctx.fillText((i+1)+'. '+lbl2,0,0);
+    ctx.restore();
+
+    // Group bracket above bars (concurrent = teal arc, sequential = purple arc)
+    if(isCon||isSeq){
+      var bktCol=isCon?'#0F6E56':'#534AB7';
+      ctx.strokeStyle=bktCol;ctx.lineWidth=1.2;
+      var topBar=by(b.dur)-14;
+      ctx.beginPath();ctx.moveTo(x+2,topBar+8);ctx.lineTo(x+2,topBar);ctx.lineTo(x+BAR_W-2,topBar);ctx.lineTo(x+BAR_W-2,topBar+8);ctx.stroke();
+      ctx.font='600 7px system-ui';ctx.fillStyle=bktCol;ctx.textAlign='center';ctx.textBaseline='bottom';
+      var icon=isCon?'∥':'→';
+      ctx.fillText(icon+b.r.members.length,x+BAR_W/2,topBar-1);
+    }
+  });
+
+  // Hit-test for click (store bar geometry for mouse events)
+  wrap._bars=bars.map(function(b,i){return {r:b.r,ri:b.ri,dur:b.dur,isCon:b.isCon,isSeq:b.isSeq,col:b.col,label:b.label,segments:b.segments,x:bx(i),w:BAR_W,y1:by(b.dur),y0:by(0)};});
+  wrap._scaleInfo={PAD_T,PAD_B,chartH,scaleY,by,PAD_L,W,H};
+
+  // tooltip + click handler
+  var tip=document.getElementById('hist-tip');
+  canvas.onmousemove=function(e){
+    var rect=canvas.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    var found=null;
+    (wrap._bars||[]).forEach(function(b){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y1-4&&my<=b.y0+4)found=b;});
+    if(found){
+      tip.style.display='block';
+      tip.style.left=Math.min(mx+12,rect.width-220)+'px';
+      tip.style.top=Math.max(4,my-40)+'px';
+      var sc=found.sc?'Sub-con: <b>'+found.sc+'</b>':'<span style="color:#9c9a92">No sub-con assigned</span>';
+      var over=found.over?'<span style="color:#A32D2D;font-weight:600"> ⚠ +'+((found.dur-tk).toFixed(1))+'d over takt</span>':'<span style="color:#189E6A"> ✓ within takt</span>';
+      var memList=found.r.members?found.r.members.map(function(m){return '<br>&nbsp;&nbsp;• '+m.name+' ('+m.dur+'d)';}).join(''):'';
+      var typeStr=found.r.type==='con'?'∥ Concurrent':found.r.type==='seq'?'→ Sequential':'Trade';
+      tip.innerHTML='<b>'+found.r.name+'</b><br>'+typeStr+' · '+found.dur+'d'+over+'<br>'+sc+memList;
+    }else tip.style.display='none';
+  };
+  canvas.onmouseleave=function(){tip.style.display='none';};
+  canvas.onclick=function(e){
+    var rect=canvas.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    var found=null;
+    (wrap._bars||[]).forEach(function(b){if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y1-4&&my<=b.y0+4)found=b;});
+    if(found)openSubconModal(found.ri,found.r,e.clientX-rect.left,e.clientY-rect.top);
+  };
+}
+
+/* ── Sub-con modal ── */
+function openSubconModal(ri,r,mx,my){
+  histClickRow=ri;
+  var modal=document.getElementById('subcon-modal');
+  var title=document.getElementById('subcon-modal-title');
+  var sel=document.getElementById('subcon-select');
+  title.textContent='Assign sub-con: '+r.name;
+  sel.innerHTML='<option value="">— none —</option>';
+  var current=getTradeSubcon(r);
+  getAllSubcons().forEach(function(s){
+    var opt=document.createElement('option');
+    opt.value=s;opt.textContent=s;
+    if(s===current)opt.selected=true;
+    sel.appendChild(opt);
+  });
+  document.getElementById('subcon-new').value='';
+  var wrap=document.getElementById('hist-wrap');
+  var wr=wrap.getBoundingClientRect();
+  modal.style.left=Math.min(mx+8,wr.width-240)+'px';
+  modal.style.top=Math.max(4,my-10)+'px';
+  modal.style.display='block';
+}
+function closeSubconModal(){document.getElementById('subcon-modal').style.display='none';histClickRow=null;}
+function applySubcon(){
+  if(histClickRow===null)return;
+  var r=rows[histClickRow];
+  var sel=document.getElementById('subcon-select').value;
+  var newName=document.getElementById('subcon-new').value.trim();
+  var name=newName||sel;
+  if(!name){closeSubconModal();return;}
+  // Apply to the row's trade id(s)
+  var ids=r.type==='trade'?[r.id]:(r.members||[]).map(function(m){return m.id;});
+  ids.forEach(function(id){if(name)subcon[id]=name;else delete subcon[id];});
+  closeSubconModal();
+  renderHist();
+}
+function clearSubcon(){
+  if(histClickRow===null)return;
+  var r=rows[histClickRow];
+  var ids=r.type==='trade'?[r.id]:(r.members||[]).map(function(m){return m.id;});
+  ids.forEach(function(id){delete subcon[id];});
+  closeSubconModal();
+  renderHist();
+}
+
+/* ═══════════════════════ NAV ═══════════════════════ */
+/* ═══════════════════════ TRADE FLOW VIEW ═══════════════════════ */
+/* ── Trade Flow filter state ──
+   flFilter[i]=true means rows[i] is visible.
+   Rebuilt by buildFlowFilter() whenever rows or search changes. */
+var flFilter=null; // null = show all
+
+function buildFlowFilter(){
+  var list=document.getElementById('fl-filter-list');
+  if(!list) return;
+  var _srch=document.getElementById('fl-search');
+  var q=_srch?_srch.value.toLowerCase().trim():'';
+
+  /* Initialise or re-sync filter index to current rows */
+  if(flFilter===null) flFilter={};
+  var newF={};
+  for(var i=0;i<rows.length;i++) newF[i]=(flFilter[i]!==false);
+  flFilter=newF;
+
+  /* ── Sub-con quick-filter buttons (dynamic) ── */
+  var scBar=document.getElementById('fl-subcon-bar');
+  if(scBar){
+    scBar.innerHTML='';
+    var allSC=getAllSubcons();
+    allSC.forEach(function(sc){
+      var btn=document.createElement('button');
+      var scCol=SUBCON_COLORS[sc]||'#534AB7';
+      btn.style.cssText='font-size:9px;padding:2px 6px;border-radius:10px;cursor:pointer;'
+        +'border:1px solid '+scCol+';background:'+scCol+'22;color:'+scCol+';'
+        +'white-space:nowrap;font-weight:600;';
+      btn.textContent=sc;
+      btn.title='Show only '+sc+' trades';
+      btn.onclick=(function(s){return function(){flowSelectBySubcon(s);};})(sc);
+      scBar.appendChild(btn);
+    });
+  }
+
+  list.innerHTML='';
+  var shown=0;
+  rows.forEach(function(r,i){
+    var sc=getTradeSubcon(r)||'';
+    /* search: match trade name OR sub-con name */
+    if(q && r.name.toLowerCase().indexOf(q)<0 && sc.toLowerCase().indexOf(q)<0) return;
+    shown++;
+
+    var col=tCol(r);
+    var checked=flFilter[i];
+    var dur=rDur(r), tk=getUserTakt();
+    var overTakt=dur>tk;
+
+    var item=document.createElement('label');
+    item.style.cssText='display:flex;align-items:center;gap:5px;padding:4px 6px;'
+      +'border-radius:4px;cursor:pointer;user-select:none;'
+      +'background:'+(checked?'rgba(0,0,0,.04)':'transparent')+';'
+      +'border:0.5px solid '+(checked?'rgba(0,0,0,.08)':'transparent')+';'
+      +'box-sizing:border-box;width:100%;';
+
+    /* colour swatch */
+    var sw=document.createElement('span');
+    sw.style.cssText='width:11px;height:11px;min-width:11px;border-radius:2px;'
+      +'background:'+col+';display:inline-block;flex-shrink:0;';
+    item.appendChild(sw);
+
+    /* checkbox */
+    var cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.checked=checked;
+    cb.style.cssText='flex-shrink:0;margin:0;cursor:pointer;width:13px;height:13px;';
+    cb.onchange=(function(idx,lbl){
+      return function(){
+        flFilter[idx]=this.checked;
+        lbl.style.background=this.checked?'rgba(0,0,0,.04)':'transparent';
+        lbl.style.borderColor=this.checked?'rgba(0,0,0,.08)':'transparent';
+        renderFlow();
+      };
+    })(i, item);
+    item.appendChild(cb);
+
+    /* trade name — takes all remaining width */
+    var nm=document.createElement('span');
+    nm.style.cssText='font-size:11px;color:var(--t);flex:1;min-width:0;'
+      +'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3;';
+    nm.textContent=r.name;
+    nm.title=r.name+(sc?' · '+sc:'');
+    item.appendChild(nm);
+
+    /* sub-con pill — shown only when assigned */
+    if(sc){
+      var scCol=SUBCON_COLORS[sc]||'#534AB7';
+      var sp=document.createElement('span');
+      sp.style.cssText='font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;flex-shrink:0;'
+        +'background:'+scCol+'22;color:'+scCol+';border:0.5px solid '+scCol+'66;'
+        +'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52px;';
+      sp.textContent=sc;
+      sp.title=sc;
+      item.appendChild(sp);
+    }
+
+    /* duration badge */
+    var db=document.createElement('span');
+    db.style.cssText='font-size:9px;flex-shrink:0;font-weight:600;padding:1px 4px;border-radius:3px;'
+      +'background:'+(overTakt?'#FCEBEB':'#F0F0EE')+';'
+      +'color:'+(overTakt?'#A32D2D':'#9c9a92')+';';
+    db.textContent=dur+'d';
+    item.appendChild(db);
+
+    list.appendChild(item);
+  });
+
+  /* shown-count badge above the list */
+  var visible=0;
+  for(var i=0;i<rows.length;i++) if(flFilter[i]) visible++;
+  var lbl2=document.getElementById('fl-filter-count');
+  if(lbl2) lbl2.textContent=visible+' of '+rows.length+' visible · '+shown+' matching';
+}
+
+function flowSelectAll(on){
+  for(var i=0;i<rows.length;i++) flFilter[i]=(on===true);
+  buildFlowFilter(); renderFlow();
+}
+
+function flowSelectAWC(){
+  for(var i=0;i<rows.length;i++) flFilter[i]=rAwc(rows[i]);
+  buildFlowFilter(); renderFlow();
+}
+
+function flowSelectBySubcon(sc){
+  for(var i=0;i<rows.length;i++){
+    var rsc=getTradeSubcon(rows[i])||'';
+    flFilter[i]=(rsc===sc);
+  }
+  buildFlowFilter(); renderFlow();
+}
+
+/* Reset filter state when rows change (called from renderAll) */
+function resetFlowFilter(){
+  flFilter=null;
+  var s=document.getElementById('fl-search');
+  if(s) s.value='';
+  buildFlowFilter();
+}
+
+
+function renderFlow(){
+  var canvas=document.getElementById('flow-canvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var tk=getUserTakt();
+  var LEVELS=getLevels();
+  var startDate=getStartDate();
+  var CW=parseInt(document.getElementById('fl-cw').value)||40;
+  var RH=parseInt(document.getElementById('fl-rh').value)||30;
+  var SHOW=document.getElementById('fl-sh').value||'level';
+
+  /* Ensure filter list is built */
+  if(flFilter===null) buildFlowFilter();
+
+  /* Takt starts for ALL rows (needed for correct beat positions) */
+  var allStarts=computeTaktStarts(tk);
+
+  /* Visible subset */
+  var visibleRows=[];
+  for(var _vi=0;_vi<rows.length;_vi++){
+    if(flFilter[_vi]!==false) visibleRows.push({r:rows[_vi],ri:_vi,start:allStarts[_vi]});
+  }
+
+  /* Empty state */
+  if(visibleRows.length===0){
+    canvas.width=400; canvas.height=60;
+    canvas.style.width='400px'; canvas.style.height='60px';
+    ctx.clearRect(0,0,400,60);
+    ctx.font='400 13px system-ui'; ctx.fillStyle='#9c9a92'; ctx.textAlign='center';
+    ctx.fillText('No trades selected — use the filter panel to show trades.',200,30);
+    return;
+  }
+
+  /* Beat range covering all visible rows at all levels */
+  var lastVis=visibleRows[visibleRows.length-1];
+  var firstVis=visibleRows[0];
+  var lastSlots=Math.max(1,Math.ceil(rDur(lastVis.r)/tk));
+  var firstBeat=Math.round(firstVis.start/tk);
+  var totalBeats=Math.ceil((lastVis.start+lastSlots*tk)/tk)+(LEVELS-1);
+
+  var TRADE_LBL=124;
+  var BEAT_HDR=34;
+  var W=TRADE_LBL+totalBeats*CW+2;
+  var H=BEAT_HDR+visibleRows.length*RH+2;
+
+  canvas.width=W*2; canvas.height=H*2;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(2,2);
+
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+
+  /* ── Alternating beat column stripes ── */
+  for(var bt=0;bt<totalBeats;bt++){
+    var cx=TRADE_LBL+bt*CW;
+    if(bt%2===0){ctx.fillStyle='rgba(0,0,0,.025)';ctx.fillRect(cx,BEAT_HDR,CW,visibleRows.length*RH);}
+  }
+
+  /* ── Active cells ── */
+  visibleRows.forEach(function(vrow,vri){
+    var r=vrow.r, dur=rDur(r), col=tCol(r);
+    var isCon=(r.type==='con'), isSeq=(r.type==='seq');
+    var rowBeat=vrow.start/tk;
+    var cy=BEAT_HDR+vri*RH;
+
+    for(var lv=1;lv<=LEVELS;lv++){
+      var beatStart=rowBeat+(lv-1);
+      var cx=TRADE_LBL+beatStart*CW;
+      var barW=Math.max(2,(dur/tk)*CW);
+
+      /* cell fill */
+      ctx.fillStyle=col; ctx.globalAlpha=0.75;
+      ctx.fillRect(cx+0.5, cy+0.5, barW-1, RH-1);
+      ctx.globalAlpha=1;
+
+      /* group stripe */
+      if(isCon||isSeq){
+        ctx.fillStyle=isCon?'#0F6E56':'#534AB7';
+        ctx.fillRect(cx+0.5, cy+0.5, 3, RH-1);
+      }
+
+      /* over-takt */
+      if(dur>tk){
+        ctx.strokeStyle='#E24B4A'; ctx.lineWidth=1;
+        ctx.strokeRect(cx+0.5, cy+0.5, barW-1, RH-1);
+        ctx.strokeStyle='rgba(226,75,74,0.4)'; ctx.lineWidth=0.8; ctx.setLineDash([2,2]);
+        var tkX=cx+CW;
+        ctx.beginPath(); ctx.moveTo(tkX,cy+0.5); ctx.lineTo(tkX,cy+RH-0.5); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      /* cell text */
+      if(CW>18 && RH>14){
+        var cellDate=addWD(startDate,Math.round(beatStart*tk));
+        var cellTxt='';
+        if(SHOW==='level') cellTxt='L'+lv;
+        else if(SHOW==='date') cellTxt=fmtDate(cellDate);
+        else cellTxt='L'+lv+' '+fmtDate(cellDate);
+        ctx.font='600 '+(RH>=28?'9':'7')+'px system-ui';
+        ctx.fillStyle='rgba(255,255,255,0.92)';
+        ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.save();
+        ctx.beginPath(); ctx.rect(cx+1,cy+1,barW-2,RH-2); ctx.clip();
+        ctx.fillText(cellTxt, cx+(isCon||isSeq?5:2), cy+RH/2);
+        ctx.restore();
+      }
+    }
+  });
+
+  /* ── Row dividers ── */
+  ctx.strokeStyle='rgba(0,0,0,.10)'; ctx.lineWidth=0.5;
+  for(var vri=0;vri<=visibleRows.length;vri++){
+    var y=BEAT_HDR+vri*RH;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+
+  /* ── Beat column dividers ── */
+  ctx.strokeStyle='rgba(0,0,0,.08)'; ctx.lineWidth=0.5;
+  for(var bt=0;bt<=totalBeats;bt++){
+    var x=TRADE_LBL+bt*CW;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  }
+
+  /* ── Left label column ── */
+  ctx.fillStyle='#f5f5f3';
+  ctx.fillRect(0,BEAT_HDR,TRADE_LBL,visibleRows.length*RH);
+  ctx.strokeStyle='rgba(0,0,0,.12)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(TRADE_LBL,0); ctx.lineTo(TRADE_LBL,H); ctx.stroke();
+
+  visibleRows.forEach(function(vrow,vri){
+    var r=vrow.r, col=tCol(r);
+    var cy=BEAT_HDR+vri*RH;
+    var isCon=(r.type==='con'), isSeq=(r.type==='seq');
+
+    /* swatch */
+    ctx.fillStyle=col; ctx.globalAlpha=0.85;
+    ctx.fillRect(4, cy+(RH-10)/2, 10, 10);
+    ctx.globalAlpha=1;
+    if(isCon||isSeq){
+      ctx.fillStyle=isCon?'#0F6E56':'#534AB7';
+      ctx.fillRect(4, cy+(RH-10)/2, 3, 10);
+    }
+
+    /* name */
+    ctx.font='500 '+(RH>=28?'10':'8')+'px system-ui';
+    ctx.fillStyle='#1a1a18'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.save();
+    ctx.beginPath(); ctx.rect(18,cy+1,TRADE_LBL-22,RH-2); ctx.clip();
+    ctx.fillText(r.name, 18, cy+RH/2);
+    ctx.restore();
+
+    /* duration */
+    var dur=rDur(r);
+    ctx.font='400 8px system-ui';
+    ctx.fillStyle=dur>tk?'#A32D2D':'#9c9a92';
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText(dur+'d', TRADE_LBL-3, cy+RH/2);
+  });
+
+  /* ── Top header ── */
+  ctx.fillStyle='#f0f0ee';
+  ctx.fillRect(0,0,W,BEAT_HDR);
+  ctx.strokeStyle='rgba(0,0,0,.12)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,BEAT_HDR); ctx.lineTo(W,BEAT_HDR); ctx.stroke();
+
+  /* corner */
+  ctx.font='500 9px system-ui'; ctx.fillStyle='#6b6b65';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Trade / dur', TRADE_LBL/2, BEAT_HDR/2);
+
+  /* beat headers */
+  for(var bt=0;bt<totalBeats;bt++){
+    var cx=TRADE_LBL+bt*CW+CW/2;
+    var beatDate=addWD(startDate,Math.round(bt*tk));
+    ctx.font='600 '+(CW>=36?'9':'7')+'px system-ui';
+    ctx.fillStyle='#633806'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText('B'+(bt+1), cx, 2);
+    if(CW>=36){
+      ctx.font='400 8px system-ui'; ctx.fillStyle='#6b6b65';
+      ctx.fillText(fmtDate(beatDate), cx, 13);
+    }
+    if(CW>=28){
+      ctx.font='400 7px system-ui'; ctx.fillStyle='#9c9a92';
+      ctx.fillText('d'+(bt*tk+1)+'-'+((bt+1)*tk), cx, CW>=36?23:13);
+    }
+  }
+
+  /* ── Filter badge ── */
+  var hidden=rows.length-visibleRows.length;
+  if(hidden>0){
+    ctx.font='500 9px system-ui'; ctx.fillStyle='#633806';
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(visibleRows.length+' of '+rows.length+' trades shown ('+hidden+' filtered)', TRADE_LBL+4, 2);
+  }
+
+  /* ── Tooltip hit test ── */
+  var wrap=document.getElementById('flow-wrap');
+  var tip=document.getElementById('flow-tip');
+
+  canvas.onmousemove=function(e){
+    var rc=canvas.getBoundingClientRect();
+    var mx=e.clientX-rc.left, my=e.clientY-rc.top;
+    var vri=Math.floor((my-BEAT_HDR)/RH);
+    var bt=Math.floor((mx-TRADE_LBL)/CW);
+    if(vri<0||vri>=visibleRows.length||bt<0||bt>=totalBeats){tip.style.display='none';return;}
+    var vrow=visibleRows[vri], r=vrow.r;
+    var dur=rDur(r);
+    var rowBeat=vrow.start/tk;
+    var lvl=bt-rowBeat+1;
+    var lvlInt=Math.round(lvl);
+    if(lvlInt<1||lvlInt>LEVELS||Math.abs(lvl-lvlInt)>0.55){tip.style.display='none';return;}
+    var beatDate=addWD(startDate,Math.round(bt*tk));
+    var endDate=addWD(startDate,Math.round(bt*tk)+dur);
+    var overTkt=dur>tk;
+    tip.innerHTML='<b>'+r.name+'</b>'
+      +'<br>Level: <b>L'+lvlInt+'</b>'
+      +'<br>Beat: <b>B'+(bt+1)+'</b>'
+      +'<br>Start: '+fmtDate(beatDate)
+      +'<br>Finish: '+fmtDate(endDate)
+      +'<br>'+dur+'d / '+tk+'d '+(overTkt?'<span style="color:#E24B4A">⚠ exceeds takt</span>':'✓ OK')
+      +(r.members?'<br><span style="color:#666">'+r.members.length+' members</span>':'');
+    tip.style.display='block';
+    tip.style.left=Math.min(mx+12,rc.width-230)+'px';
+    tip.style.top=Math.max(2,my-10)+'px';
+  };
+  canvas.onmouseleave=function(){tip.style.display='none';};
+}
+
+function resetAll(){
+  if(!confirm('Reset ALL groupings back to the 29 base trades?')) return;
+  rows=BASE.map(function(t){
+    return {type:'trade',id:t.id,name:t.name,short:t.short,dur:t.dur,awc:t.awc,selected:false};
+  });
+  renderAll(); showTab('seq');
+}
+
+/* ═══════════════════════ EXCEL EXPORT ═══════════════════════ */
+function exportAllExcel(){
+  var tk=getUserTakt(), LEVELS=getLevels(), UNITS=getUnits();
+  var startDate=getStartDate();
+  var wb=XLSX.utils.book_new();
+
+  /* ── Sheet 1: Sequence ── */
+  var seqData=[['#','Type','Name','Duration (d)','AWC','Takt OK?','Members']];
+  rows.forEach(function(r,i){
+    var dur=rDur(r), awc=rAwc(r)?'Yes':'No';
+    var ok=dur<=tk?'Yes':'EXCEEDS by '+(dur-tk)+'d';
+    var members='';
+    if(r.members) members=r.members.map(function(m){return m.name+'('+m.dur+'d)';}).join(' | ');
+    seqData.push([i+1, r.type, r.name, dur, awc, ok, members]);
+  });
+  var ws1=XLSX.utils.aoa_to_sheet(seqData);
+  ws1['!cols']=[{wch:4},{wch:10},{wch:40},{wch:14},{wch:6},{wch:16},{wch:60}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Sequence');
+
+  /* ── Sheet 2: Takt Plan ── */
+  var starts=computeTaktStarts(tk);
+  var taktHdr=['Trade','Duration','Beat #','Beat Start Day','Beat End Day','Fits Takt?'];
+  for(var lv=1;lv<=Math.min(LEVELS,20);lv++) taktHdr.push('L'+lv+' Start (WD)');
+  var taktData=[taktHdr];
+  rows.forEach(function(r,ri){
+    var dur=rDur(r);
+    var beatNum=Math.round(starts[ri]/tk)+1;
+    var beatStart=starts[ri]+1;
+    var beatEnd=starts[ri]+tk;
+    var fits=dur<=tk?'Yes':'No ('+dur+'d)';
+    var row=[r.name, dur+'d', 'B'+beatNum, beatStart, beatEnd, fits];
+    for(var lv=1;lv<=Math.min(LEVELS,20);lv++){
+      row.push(starts[ri]+(lv-1)*tk+1);
+    }
+    taktData.push(row);
+  });
+  var ws2=XLSX.utils.aoa_to_sheet(taktData);
+  ws2['!cols']=[{wch:38},{wch:10},{wch:8},{wch:15},{wch:13},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Takt Plan');
+
+  /* ── Sheet 3: Trade Flow (Level matrix) ── */
+  var flowHdr=['Trade','Dur','AWC'];
+  var maxLv=Math.min(LEVELS,30);
+  for(var lv=1;lv<=maxLv;lv++) flowHdr.push('L'+lv+' Beat');
+  var flowData=[flowHdr];
+  rows.forEach(function(r,ri){
+    var row=[r.name, rDur(r)+'d', rAwc(r)?'AWC':''];
+    var beatBase=Math.round(starts[ri]/tk);
+    for(var lv=1;lv<=maxLv;lv++){
+      row.push('B'+(beatBase+(lv-1)+1));
+    }
+    flowData.push(row);
+  });
+  var ws3=XLSX.utils.aoa_to_sheet(flowData);
+  ws3['!cols']=[{wch:38},{wch:6},{wch:5}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Trade Flow');
+
+  /* ── Sheet 4: LoB Schedule ── */
+  var lobStarts=computeStarts();
+  var lobHdr=['Trade','Duration','Start WD','Finish WD','AWC','Type'];
+  for(var lv=1;lv<=Math.min(LEVELS,20);lv++){
+    lobHdr.push('L'+lv+' Start');lobHdr.push('L'+lv+' Finish');
+  }
+  var lobData=[lobHdr];
+  rows.forEach(function(r,ri){
+    var dur=rDur(r);
+    var row=[r.name, dur, lobStarts[ri]+1, lobStarts[ri]+dur, rAwc(r)?'AWC':'', r.type];
+    for(var lv=1;lv<=Math.min(LEVELS,20);lv++){
+      var lo=(lv-1)*tk;
+      row.push(lobStarts[ri]+lo+1);
+      row.push(lobStarts[ri]+dur+lo);
+    }
+    lobData.push(row);
+  });
+  var ws4=XLSX.utils.aoa_to_sheet(lobData);
+  ws4['!cols']=[{wch:38},{wch:8},{wch:9},{wch:10},{wch:5},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'LoB Chart');
+
+  /* ── Sheet 5: Settings ── */
+  var sDate=startDate.toDateString();
+  var settingsData=[
+    ['Setting','Value'],
+    ['Project Start', sDate],
+    ['Levels', LEVELS],
+    ['Units per Level', UNITS],
+    ['Takt Time (d)', tk],
+    ['Working Days per Week', WDW],
+    ['Total Sequence Rows', rows.length],
+    ['Total WD per Unit', totalWD()],
+    ['Takt Violations', getTaktViolations(tk).length],
+  ];
+  var ws5=XLSX.utils.aoa_to_sheet(settingsData);
+  ws5['!cols']=[{wch:22},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws5, 'Settings');
+
+  /* style header rows bold */
+  ['Sequence','Takt Plan','Trade Flow','LoB Chart','Settings'].forEach(function(sn){
+    var ws=wb.Sheets[sn];
+    var range=XLSX.utils.decode_range(ws['!ref']);
+    for(var C=range.s.c;C<=range.e.c;C++){
+      var addr=XLSX.utils.encode_cell({r:0,c:C});
+      if(ws[addr]) ws[addr].s={font:{bold:true},fill:{fgColor:{rgb:'1F497D'}},font:{bold:true,color:{rgb:'FFFFFF'}}};
+    }
+  });
+
+  var today=new Date();
+  var fn='LoB_TaktPlan_'+today.getFullYear()+(today.getMonth()+1<10?'0':'')+(today.getMonth()+1)+today.getDate()+'.xlsx';
+  XLSX.writeFile(wb, fn);
+}
+
+/* ═══════════════════════ EXCEL IMPORT ═══════════════════════ */
+function importExcel(input){
+  var file=input.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result, {type:'binary'});
+      /* look for "Sequence" sheet */
+      var wsName=wb.SheetNames.indexOf('Sequence')>=0?'Sequence':wb.SheetNames[0];
+      var ws=wb.Sheets[wsName];
+      var data=XLSX.utils.sheet_to_json(ws, {header:1});
+      if(data.length<2){alert('No data found in "'+wsName+'" sheet.');return;}
+      /* parse rows: expect col 0=#, col 1=Type, col 2=Name, col 3=Duration */
+      var hdr=data[0].map(function(h){return String(h).toLowerCase();});
+      var iName=hdr.indexOf('name'); if(iName<0)iName=2;
+      var iDur=3;for(var _fi=0;_fi<hdr.length;_fi++){if(hdr[_fi].indexOf('dur')>=0){iDur=_fi;break;}}
+      var iAwc=4;for(var _fi2=0;_fi2<hdr.length;_fi2++){if(hdr[_fi2].indexOf('awc')>=0){iAwc=_fi2;break;}}
+      var imported=[];
+      for(var ri=1;ri<data.length;ri++){
+        var row=data[ri];
+        if(!row||!row[iName]) continue;
+        var name=String(row[iName]).trim();
+        var dur=parseFloat(row[iDur])||1;
+        var awc=(String(row[iAwc]||'').toLowerCase()==='yes'||String(row[iAwc]||'').toLowerCase()==='awc'||String(row[iAwc]||'')==='true');
+        /* match to BASE trade by name for id/short, else create new */
+        var base=null;
+        for(var bi=0;bi<BASE.length;bi++){if(BASE[bi].name===name){base=BASE[bi];break;}}
+        var t=base
+          ? {type:'trade',id:base.id,name:base.name,short:base.short,dur:dur,awc:base.awc,selected:false}
+          : {type:'trade',id:9000+ri,name:name,short:name.substring(0,12),dur:dur,awc:awc,selected:false};
+        imported.push(t);
+      }
+      if(imported.length===0){alert('Could not parse any trades from the sheet.');return;}
+      if(!confirm('Replace current sequence with '+imported.length+' imported trades?')) return;
+      rows=imported;
+      renderAll(); showTab('seq');
+      alert('Imported '+imported.length+' trades from "'+wsName+'".');
+    } catch(err){
+      alert('Import failed: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADVISORY TAB  —  renderAdvisory()
+   Three sections:
+   A. AWC Labor Productivity Recommendations
+   B. Takt Planning vs LoB/LBMS Comparison
+   C. Beat Packing vs Continuous Flow Analysis
+═══════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════
+   ADVISORY TAB  v2  —  renderAdvisory()
+   Expert recommendations for AWC productivity via Spatial-Temporal
+   Management, plus Takt vs LoB/LBMS comparison and strategy analysis.
+═══════════════════════════════════════════════════════════════════════ */
+function renderAdvisory(){
+  var wrap=document.getElementById('advisory-wrap');
+  if(!wrap) return;
+
+  var tk=getUserTakt(), LEVELS=getLevels(), UNITS=getUnits();
+  var startDate=getStartDate();
+  var awcRows=rows.filter(function(r){return rAwc(r);});
+  var viols=getTaktViolations(tk);
+  var taktStarts=computeTaktStarts(tk);
+  var lobStarts=computeStarts();
+  var baseTrades=BASE.map(function(t){return {id:t.id,name:t.name,short:t.short,dur:t.dur,awc:t.awc};});
+
+  /* ── Derived metrics ── */
+  var awcMet=awcRows.map(function(r){
+    var d=rDur(r);
+    return {name:r.name,short:(r.short||r.name),dur:d,util:Math.round(d/tk*100),gap:Math.max(0,tk-d),over:d>tk};
+  });
+  var pacemakers=awcMet.filter(function(t){return t.util===100;});
+  var urgent=awcMet.filter(function(t){return t.util<60;});
+  var underutil=awcMet.filter(function(t){return t.util>0&&t.util<85&&!t.over;});
+  var totalBeats=baseTrades.reduce(function(s,t){return s+Math.max(1,Math.ceil(t.dur/tk));},0);
+  var lobTotal=lobStarts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+  var taktTotal=taktStarts[rows.length-1]+rDur(rows[rows.length-1])+(LEVELS-1)*tk;
+
+  /* ── DOM helpers ── */
+  function h(tag,css,html){
+    return '<'+tag+(css?' style="'+css+'"':'')+'>'+html+'</'+tag+'>';
+  }
+  function card(accentCol,icon,title,body){
+    return '<div style="background:var(--bg);border:0.5px solid var(--bd);border-radius:12px;'
+      +'padding:16px 18px;border-left:4px solid '+accentCol+';margin-bottom:0">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'
+      +'<span style="font-size:18px">'+icon+'</span>'
+      +'<h3 style="margin:0;font-size:13px;font-weight:700;color:'+accentCol+'">'+title+'</h3>'
+      +'</div>'+body+'</div>';
+  }
+  function pill(txt,col){
+    return '<span style="display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;'
+      +'border-radius:10px;background:'+col+'22;color:'+col+';border:0.5px solid '+col+'66;'
+      +'letter-spacing:.3px;text-transform:uppercase;flex-shrink:0">'+txt+'</span>';
+  }
+  function rec(level,headline,body){
+    var cfg={
+      critical:{col:'#A32D2D',bg:'#FDF0F0',lbl:'Critical'},
+      high:    {col:'#BA7517',bg:'#FDF6ED',lbl:'High'},
+      med:     {col:'#185FA5',bg:'#EBF4FB',lbl:'Action'},
+      good:    {col:'#0F6E56',bg:'#EBF8F3',lbl:'Best Practice'}
+    }[level]||{col:'#6b6b65',bg:'#f5f5f3',lbl:'Note'};
+    return '<div style="display:flex;gap:10px;padding:9px 11px;border-radius:7px;'
+      +'background:'+cfg.bg+';border:0.5px solid '+cfg.col+'33;margin-bottom:7px">'
+      +'<span style="flex-shrink:0;margin-top:1px">'+pill(cfg.lbl,cfg.col)+'</span>'
+      +'<div style="font-size:11px;line-height:1.65;color:var(--t)">'
+      +'<b>'+headline+'</b><br>'+body+'</div></div>';
+  }
+  function statGrid(items){
+    var inner=items.map(function(s){
+      return '<div style="background:var(--bg2);border-radius:8px;padding:9px 8px;text-align:center;border:0.5px solid var(--bd)">'
+        +'<div style="font-size:18px;font-weight:700;color:'+(s[2]||'var(--t)')+'">'+s[0]+'</div>'
+        +'<div style="font-size:10px;color:var(--t2);margin-top:2px">'+s[1]+'</div>'
+        +'</div>';
+    }).join('');
+    return '<div style="display:grid;grid-template-columns:repeat('+items.length+',1fr);gap:8px;margin-bottom:14px">'+inner+'</div>';
+  }
+  function twoCol(a,b){
+    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+a+b+'</div>';
+  }
+  function infoBox(col,body){
+    return '<div style="padding:9px 12px;border-radius:7px;background:'+col+'11;border:0.5px solid '+col+'44;'
+      +'font-size:11px;line-height:1.65;color:var(--t);margin-bottom:10px">'+body+'</div>';
+  }
+  function cmpRow(dim,takt,lob){
+    return '<tr style="border-bottom:0.5px solid var(--bd)">'
+      +'<td style="padding:5px 8px;font-size:11px;font-weight:600;color:var(--t2)">'+dim+'</td>'
+      +'<td style="padding:5px 8px;font-size:11px;color:var(--t)">'+takt+'</td>'
+      +'<td style="padding:5px 8px;font-size:11px;color:var(--t)">'+lob+'</td>'
+      +'</tr>';
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     SECTION A  —  AWC PRODUCTIVITY VIA SPATIAL-TEMPORAL MANAGEMENT
+  ══════════════════════════════════════════════════════════════ */
+
+  /* Stats row */
+  var awcStats=statGrid([
+    [pacemakers.map(function(t){return t.name.split(' ')[0]+' '+t.name.split(' ')[1];}).join(', '),'Pacemaker(s) @ 100% beat util','#0F6E56'],
+    [urgent.length+' trade'+(urgent.length!==1?'s':''),'Idle capacity (< 60% util)','#A32D2D'],
+    [LEVELS,'Levels (vertical assembly line)','#185FA5'],
+    [tk+'d','Takt beat (pacemaker anchor)','#633806']
+  ]);
+
+  /* AWC utilisation table */
+  var awcTbl='<div style="overflow-x:auto;margin-bottom:14px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    +'<thead><tr style="background:var(--bg2)">'
+    +'<th style="padding:5px 8px;text-align:left;font-weight:600">AWC Trade</th>'
+    +'<th style="padding:5px 8px;text-align:center">Dur</th>'
+    +'<th style="padding:5px 8px;text-align:center">Beat util</th>'
+    +'<th style="padding:5px 8px;text-align:center">Idle / beat</th>'
+    +'<th style="padding:5px 8px;text-align:left">Status</th>'
+    +'</tr></thead><tbody>';
+  awcMet.forEach(function(t){
+    var uCol=t.over?'#A32D2D':t.util===100?'#0F6E56':t.util>=75?'#185FA5':t.util>=60?'#BA7517':'#A32D2D';
+    var bar='<div style="background:#e8e8e5;border-radius:3px;height:7px;width:80px;display:inline-block;vertical-align:middle;overflow:hidden">'
+      +'<div style="width:'+Math.min(100,t.util)+'%;height:100%;background:'+uCol+'"></div></div>';
+    var status=t.over?'⚠ Exceeds takt — cascade risk':
+               t.util===100?'✓ Pacemaker — anchor the beat':
+               t.util>=85?'✓ On target':
+               t.util>=60?'↑ Increase gang size or split activity':
+               '↑↑ Re-allocate idle capacity (see §A2)';
+    awcTbl+='<tr style="border-bottom:0.5px solid var(--bd)">'
+      +'<td style="padding:5px 8px;font-weight:500">'+t.name+'</td>'
+      +'<td style="padding:5px 8px;text-align:center">'+t.dur+'d</td>'
+      +'<td style="padding:5px 8px;text-align:center">'+bar+' <b style="color:'+uCol+'">'+t.util+'%</b></td>'
+      +'<td style="padding:5px 8px;text-align:center;color:'+(t.gap>0?'#BA7517':'#6b6b65')+'">'+Math.max(0,t.gap)+'d</td>'
+      +'<td style="padding:5px 8px;color:var(--t2)">'+status+'</td>'
+      +'</tr>';
+  });
+  awcTbl+='</tbody></table></div>';
+
+  /* ── §A1 Synchronise Takt to Pacemaker ── */
+  var pacemakerNames=pacemakers.map(function(t){return t.name;}).join(' and ');
+  var urgentNames=urgent.map(function(t){return t.name+' ('+t.util+'%)';}).join(', ');
+
+  var a1body=infoBox('#633806',
+    '<b>The Golden Rule of Takt:</b> No AWC trade can have a duration longer than the Pacemaker. '
+    +'Your Pacemaker(s) are <b>'+pacemakerNames+'</b> at '+tk+'d = 100% beat utilisation. '
+    +'Every other AWC trade must fit within this '+tk+'d window — or the beat collapses.'
+  )
+  +rec('critical','Pacemaker anchor — protect '+pacemakerNames,
+    'These are your schedule anchors. Never allow any upstream delay to break into their beat. '
+    +'Assign your most experienced foreman to the pacemaker crew and elevate any constraint '
+    +'that threatens their start to the site manager immediately.')
+  +rec('high','Re-allocate idle capacity in "Urgent" trades: '+urgentNames,
+    'Do <b>not</b> simply compress these trades to save time. Instead re-allocate the idle '
+    +'capacity: (1) If duration ≤ 50% of takt, schedule the same crew across <b>two floors '
+    +'simultaneously</b> — finish Level N (Days 1–'+Math.round(urgent[0]&&urgent[0].dur||2)+') then '
+    +'Level N+1 (Days '+(Math.round(urgent[0]&&urgent[0].dur||2)+1)+'–'+Math.round((urgent[0]&&urgent[0].dur||2)*2)+'). '
+    +'(2) Increase gang size to reach 85–90% beat utilisation target. '
+    +'(3) Bundle with a compatible non-AWC activity within the same beat.')
+  +rec('high','Maintain a 1.5-floor moisture buffer between wet and dry trades',
+    'Keep a mandatory physical buffer of <b>1.5 floors</b> between the wet trades (Screeding, '
+    +'Waterproofing, Tiling) and the dry trades (Drywall, Skimming). This prevents: '
+    +'(1) Moisture damage to Drywall boards, (2) Trade interference causing rework, '
+    +'(3) Safety hazards from wet floors adjacent to plasterboard cutting. '
+    +'Buffer = non-negotiable; any compression here costs more in rework than it saves in time.');
+
+  /* ── §A2 Zonal Ownership ── */
+  var a2body=infoBox('#185FA5',
+    '<b>Move from floor-wide to zonal ownership.</b> The trade currently occupying a floor <em>owns</em> '
+    +'the cleanliness, safety and access control of that floor for the duration of their takt beat. '
+    +'No trade can mobilise until the preceding sub-con formally hands over a clean floor.'
+  )
+  +rec('med','Digital LPS "Clean-to-Start" handover protocol',
+    'AWC Sub-con cannot mobilise to Level N+1 until they digitally <b>"Accept"</b> the floor from '
+    +'the preceding trade via a mobile LPS checklist. Acceptance criteria: '
+    +'(1) Floor swept and debris removed, (2) Materials from prior trade cleared or marked, '
+    +'(3) Utilities (power/water) confirmed live, (4) Access scaffold or MEP openings barricaded, '
+    +'(5) Inspection and approval by foreman. Timestamp is logged — non-acceptance triggers '
+    +'an automatic escalation to the site manager.')
+  +rec('med','Visual Zone Owner board at every lift lobby',
+    'Post a <b>"Zone Owner" card</b> at the lift lobby of each floor showing: '
+    +'current trade name, foreman name and contact, start date, planned finish date, '
+    +'and a red/amber/green status dot. Update daily during the morning huddle. '
+    +'This gives every worker immediate situational awareness and creates accountability '
+    +'without a supervisor having to police each floor.')
+  +rec('good','Last Planner System (LPS) weekly rhythm for AWC',
+    'Hold a <b>weekly AWC constraint-removal meeting</b> 3 weeks ahead of mobilisation. '
+    +'For each upcoming beat, confirm 6 constraints are green: '
+    +'(1) Access granted and floor handed over, '
+    +'(2) Preceding AWC works complete and inspected, '
+    +'(3) Materials delivered to the floor (not just site), '
+    +'(4) Crew confirmed, certified and inducted, '
+    +'(5) Equipment (scaffolding, mixers, tiling tools) available, '
+    +'(6) Permit / RFI / shop drawing approved. '
+    +'Track Percent Plan Complete (PPC) per AWC trade — target ≥ 80%.');
+
+  /* ── §A3 Work Splitting (Multi-Level Parallelism) ── */
+  var wfEx=urgent.length>0?urgent[0]:{name:'Waterproofing (Wet Area)',dur:2};
+  var halfLevels=Math.round(LEVELS/2);
+  var a3body=infoBox('#534AB7',
+    '<b>Multi-Level Parallelism:</b> For under-utilised AWC trades, do not leave one crew idle '
+    +'for '+(tk-(wfEx.dur||2))+'d on a single floor. Instead, have them work across two floors '
+    +'within the same takt beat — maintaining continuous crew movement with no floor-level stacking.'
+  )
+  +rec('med','Work Splitting: '+wfEx.name+' ('+wfEx.dur+'d — '+Math.round((wfEx.dur/tk)*100)+'% util)',
+    '<b>Current (inefficient):</b> 1 crew on Level N, Days 1–'+wfEx.dur+'. Idle Days '+(wfEx.dur+1)+'–'+tk+'. '
+    +'<br><b>Optimised:</b> Same crew finishes Level N (Days 1–'+wfEx.dur+') then immediately moves to '
+    +'Level N+1 (Days '+(wfEx.dur+1)+'–'+(wfEx.dur*2)+'). '
+    +'<br><b>Result:</b> The crew is always productive; only one crew is physically on any given floor '
+    +'at a time — no resource stacking. This approach can be extended to cover '
+    +Math.floor(tk/wfEx.dur)+' floors per takt beat for this trade.')
+  +rec('high','Resource Stacking prevention — enforce a 2-floor Empty Zone',
+    'Between Screeding and Tiling, maintain a minimum <b>2-floor Empty Zone</b> with no AWC activity. '
+    +'This temporal buffer absorbs production rate variations and prevents the tiling crew from '
+    +'chasing the screeding crew onto a floor before the screed has cured (min. 48–72h). '
+    +'Monitor this gap on the LoB Chart — if the lines converge, slow the downstream trade '
+    +'or accelerate the upstream trade using LPS pull planning.')
+  +rec('med','Increase gang size for Waterproofing (Wet Area) to hit 85% utilisation',
+    'Waterproofing (Wet Area) at '+awcMet.filter(function(t){return t.name.indexOf('Wet Area')>=0;})[0]&&awcMet.filter(function(t){return t.name.indexOf('Wet Area')>=0;})[0].util||75+'% is the largest idle-time gap in the AWC sequence. '
+    +'Adding one operative to the waterproofing crew would compress duration from '+awcMet.filter(function(t){return t.name.indexOf('Wet Area')>=0;})[0]&&awcMet.filter(function(t){return t.name.indexOf('Wet Area')>=0;})[0].dur||6+'d to ~'+Math.round((awcMet.filter(function(t){return t.name.indexOf('Wet Area')>=0;})[0]&&awcMet.filter(function(t){return t.name.indexOf('Wet Area')>=0;})[0].dur||6)*0.75)+'d, '
+    +'bringing utilisation to ~85% — the productivity sweet spot that avoids both idle time and crew crowding.');
+
+  /* ── §A4 LoB for Buffer Monitoring ── */
+  var a4body=infoBox('#0F6E56',
+    '<b>Hybrid approach:</b> Use Takt for daily rhythm and crew coordination; use LoB/LBMS to '
+    +'visualise space-time clashes before they happen — especially across 45 levels where cumulative '
+    +'delay is your biggest risk.'
+  )
+  +rec('med','Monitor AWC trade slopes on the LoB Chart for space-time clashes',
+    'On the LoB chart, each AWC trade appears as a diagonal line with slope = production rate (floors/day). '
+    +'<b>Warning signal:</b> If the Plastering slope is steeper than the Floor Tiling slope, the lines will '
+    +'converge — indicating a space-time clash ~5 floors ahead. '
+    +'<b>Action:</b> Use the Weekly Work Plan to either slow Plastering (release operatives to other tasks) '
+    +'or accelerate Tiling (add a second gang) to restore parallel lines. '
+    +'Parallel slopes = continuous flow. Converging slopes = imminent collision.')
+  +rec('good','Treat the 45-level building as a vertical assembly line',
+    'Each floor is a "workstation" on a vertical assembly line. '
+    +'The AWC sub-con is the "production line worker" — they must never be waiting for work '
+    +'and the work must never be waiting for workers. '
+    +'Use the Trade Flow tab in this planner to visualise every AWC trade across all beats and levels. '
+    +'Any empty cell = idle time = cost to the project.');
+
+  /* Summary table */
+  var summTbl='<div style="overflow-x:auto;margin-top:4px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    +'<thead><tr style="background:#0C447C;color:#fff">'
+    +'<th style="padding:7px 10px;text-align:left;font-weight:600">Challenge</th>'
+    +'<th style="padding:7px 10px;text-align:left;font-weight:600">Strategy</th>'
+    +'<th style="padding:7px 10px;text-align:left;font-weight:600">Tactical Action</th>'
+    +'</tr></thead><tbody>'
+    +'<tr style="background:var(--bg2)"><td style="padding:6px 10px;font-weight:600;color:#A32D2D">Idle Time</td>'
+    +'<td style="padding:6px 10px">Beat Packing</td>'
+    +'<td style="padding:6px 10px">Combine Ceiling Skimming &amp; LPCP into a single 8d "Wet Prep" beat.</td></tr>'
+    +'<tr><td style="padding:6px 10px;font-weight:600;color:#BA7517">Resource Stacking</td>'
+    +'<td style="padding:6px 10px">Temporal Buffers</td>'
+    +'<td style="padding:6px 10px">Enforce a minimum 2-floor Empty Zone between Screeding and Tiling.</td></tr>'
+    +'<tr style="background:var(--bg2)"><td style="padding:6px 10px;font-weight:600;color:#185FA5">Housekeeping</td>'
+    +'<td style="padding:6px 10px">Zonal Ownership</td>'
+    +'<td style="padding:6px 10px">Implement a "Clean-to-Start" digital handover protocol at every floor.</td></tr>'
+    +'<tr><td style="padding:6px 10px;font-weight:600;color:#0F6E56">Productivity Leak</td>'
+    +'<td style="padding:6px 10px">Crew Balancing</td>'
+    +'<td style="padding:6px 10px">Increase gang size for Waterproofing (Wet Area) to hit 85% utilisation.</td></tr>'
+    +'</tbody></table></div>';
+
+  var sectionA=card('#0C447C','🏗️',
+    'AWC Productivity — Spatial-Temporal Management for '+LEVELS+' Levels',
+    awcStats+awcTbl
+    +'<div style="margin-bottom:10px;font-weight:700;font-size:11px;color:#0C447C;letter-spacing:.3px;text-transform:uppercase">§ A1 — Synchronise the Takt Beat to the Pacemaker</div>'+a1body
+    +'<div style="margin-bottom:10px;margin-top:14px;font-weight:700;font-size:11px;color:#0C447C;letter-spacing:.3px;text-transform:uppercase">§ A2 — Zonal Ownership &amp; LPS Handover</div>'+a2body
+    +'<div style="margin-bottom:10px;margin-top:14px;font-weight:700;font-size:11px;color:#0C447C;letter-spacing:.3px;text-transform:uppercase">§ A3 — Solve Resource Stacking via Work Splitting</div>'+a3body
+    +'<div style="margin-bottom:10px;margin-top:14px;font-weight:700;font-size:11px;color:#0C447C;letter-spacing:.3px;text-transform:uppercase">§ A4 — Transition Takt → LoB/LBMS for Buffer Monitoring</div>'+a4body
+    +'<div style="margin-top:14px;font-weight:700;font-size:11px;color:#0C447C;letter-spacing:.3px;text-transform:uppercase">Summary Recommendation Table</div>'
+    +summTbl
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     SECTION B  —  TAKT PLANNING vs LoB/LBMS
+  ══════════════════════════════════════════════════════════════ */
+
+  var useTaktHtml='<div style="background:#FFF8ED;border:0.5px solid #FAC775;border-radius:8px;'
+    +'padding:11px 13px;font-size:11px;line-height:1.7">'
+    +'<div style="font-weight:700;color:#633806;margin-bottom:7px;font-size:12px">⟳ Use Takt Planning When…</div>'
+    +'<ul style="margin:0;padding-left:16px;color:var(--t)">'
+    +'<li>Floors are repetitive with the same unit mix and sequence</li>'
+    +'<li>AWC trades dominate the critical path</li>'
+    +'<li>You want zero idle time between floors for every crew</li>'
+    +'<li>PPVC / modular / precast / MET systems are used</li>'
+    +'<li>Crew stability and learning-curve improvement are priorities</li>'
+    +'<li>Daily visual management (zone boards, beat displays) is in place</li>'
+    +'</ul></div>';
+
+  var useLobHtml='<div style="background:#EBF4FB;border:0.5px solid #B5D4F4;border-radius:8px;'
+    +'padding:11px 13px;font-size:11px;line-height:1.7">'
+    +'<div style="font-weight:700;color:#0C447C;margin-bottom:7px;font-size:12px">📈 Use LoB / LBMS When…</div>'
+    +'<ul style="margin:0;padding-left:16px;color:var(--t)">'
+    +'<li>Floor plans change significantly between levels</li>'
+    +'<li>Trade durations vary by floor (podium, plant room, roof)</li>'
+    +'<li>Complex M&amp;E / specialist works with variable scope</li>'
+    +'<li>You need to visualise and manage buffer zones between trades</li>'
+    +'<li>Programme includes non-repetitive zones (basement, roof, façade)</li>'
+    +'<li>Monitoring production rate trends to catch space-time clashes early</li>'
+    +'</ul></div>';
+
+  var compTbl='<div style="overflow-x:auto;margin:12px 0">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    +'<thead><tr style="background:var(--bg2)">'
+    +'<th style="padding:6px 8px;text-align:left;width:28%">Dimension</th>'
+    +'<th style="padding:6px 8px;text-align:left;color:#BA7517;width:36%">⟳ Takt Planning</th>'
+    +'<th style="padding:6px 8px;text-align:left;color:#185FA5;width:36%">📈 LoB / LBMS</th>'
+    +'</tr></thead><tbody>'
+    +cmpRow('Scheduling unit','Fixed takt beat ('+tk+'d) — constant rhythm','Variable — each trade\'s duration drives its start')
+    +cmpRow('X-axis','Time in takt beats (B1, B2, B3…)','Time in calendar / working days')
+    +cmpRow('Production rhythm','All trades move floors every '+tk+'d — synchronised','Trades move when predecessor finishes — asynchronous')
+    +cmpRow('Bottleneck visibility','Trade with violations immediately visible on beat grid','Steepest LoB line = bottleneck; converging lines = clash')
+    +cmpRow('Buffer management','Time buffer built into beat (tk − dur) per trade','Explicit buffer lines drawn on LoB chart between trades')
+    +cmpRow('AWC handling','AWC must fit ≤ takt or a violation flag is raised','AWC sets its own pace; LoB shows accumulated float')
+    +cmpRow('Crew continuity','Guaranteed when beat is full — crew always moving','Depends on sequencing; gaps in LoB lines = idle crew')
+    +cmpRow('Space-time clash detection','Beat violations flag conflicts; Trade Flow shows gaps','LoB slope convergence gives 3–5 floor advance warning')
+    +cmpRow('LPS &amp; look-ahead','Beat = constraint-removal window; 3-week look-ahead per beat','Milestone date drives make-ready; 3-week look-ahead by trade start')
+    +cmpRow('Trade coordination','Daily huddle per beat; zone board updated every morning','Weekly progress meeting; LoB chart updated weekly')
+    +cmpRow('Programme length','~'+Math.round(taktTotal)+' WD (takt-aligned)','~'+Math.round(lobTotal)+' WD (cumulative durations)')
+    +cmpRow('Best fit for','Repetitive residential / hotel / hospital — same unit every floor','Mixed-use, complex buildings, infrastructure with variable floors')
+    +'</tbody></table></div>';
+
+  var hybridNote=infoBox('#0F6E56',
+    '<b>Recommended Hybrid Approach for this '+LEVELS+'-level project:</b> '
+    +'Use <b>Takt Planning</b> for day-to-day crew coordination and visual management (beat board, zone ownership). '
+    +'Use <b>LoB/LBMS</b> for weekly programme monitoring — specifically to detect slope convergence '
+    +'(space-time clashes) between AWC trades 3–5 floors ahead and to manage the 1.5–2 floor buffer zones. '
+    +'The two methods are complementary, not competing. '
+    +(Math.round(lobTotal-taktTotal)>0
+      ? 'Takt-aligning the schedule compresses programme by approximately <b>'+Math.round(lobTotal-taktTotal)+'d</b> vs cumulative LoB scheduling on this project.'
+      : 'On this project the cumulative LoB and Takt durations are similar — the key benefit of Takt is the rhythm and flow discipline, not programme compression alone.')
+  );
+
+  var sectionB=card('#185FA5','📊',
+    'Takt Planning vs LoB / LBMS — Method Comparison',
+    twoCol(useTaktHtml,useLobHtml)+compTbl+hybridNote
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     SECTION C  —  BEAT PACKING vs CONTINUOUS FLOW
+  ══════════════════════════════════════════════════════════════ */
+
+  /* Simulate */
+  function simBP(trades2,takt2){
+    var elig=trades2.filter(function(t){return !t.awc&&t.dur<takt2;});
+    var consumed={};var groups=[];
+    for(var ei=0;ei<elig.length;ei++){
+      if(consumed[ei])continue;
+      var mem=[ei];var tot=elig[ei].dur;
+      for(var ej=ei+1;ej<elig.length;ej++){
+        if(consumed[ej])continue;
+        if(tot+elig[ej].dur<=takt2){mem.push(ej);tot+=elig[ej].dur;}
+      }
+      if(mem.length>=2){for(var m=0;m<mem.length;m++)consumed[mem[m]]=true;groups.push({n:mem.length,dur:tot,type:'seq'});}
+      else{consumed[ei]=true;groups.push({n:1,dur:elig[ei].dur,type:'solo'});}
+    }
+    var awcBeats=trades2.filter(function(t){return t.awc;}).reduce(function(s,t){return s+Math.max(1,Math.ceil(t.dur/takt2));},0);
+    var nBeats=awcBeats+groups.length;
+    var grpCount=groups.filter(function(g){return g.type==='seq';}).length;
+    var rows2=trades2.filter(function(t){return t.awc;}).length+groups.length;
+    return {beats:nBeats,groups:grpCount,rows:rows2};
+  }
+  function simCF(trades2,takt2){
+    var elig=trades2.filter(function(t){return !t.awc&&t.dur<=takt2;});
+    var groups=[];var i=0;
+    while(i<elig.length){
+      var mem=[elig[i]];var maxD=elig[i].dur;var j=i+1;
+      while(j<elig.length){var nm=Math.max(maxD,elig[j].dur);if(nm>takt2)break;mem.push(elig[j]);maxD=nm;j++;if(maxD>=takt2*0.92)break;}
+      if(mem.length>=2)groups.push({n:mem.length,dur:maxD,type:'con'});
+      else groups.push({n:1,dur:elig[i].dur,type:'solo'});
+      i=j;
+    }
+    var awcBeats=trades2.filter(function(t){return t.awc;}).reduce(function(s,t){return s+Math.max(1,Math.ceil(t.dur/takt2));},0);
+    var nBeats=awcBeats+groups.reduce(function(s,g){return s+Math.max(1,Math.ceil(g.dur/takt2));},0);
+    var grpCount=groups.filter(function(g){return g.type==='con'&&g.n>1;}).length;
+    var rows2=trades2.filter(function(t){return t.awc;}).length+groups.length;
+    return {beats:nBeats,groups:grpCount,rows:rows2};
+  }
+
+  var rawBeats=baseTrades.reduce(function(s,t){return s+Math.max(1,Math.ceil(t.dur/tk));},0);
+  var bpSim=simBP(baseTrades,tk);
+  var cfSim=simCF(baseTrades,tk);
+
+  var stratTbl='<div style="overflow-x:auto;margin:12px 0">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    +'<thead><tr style="background:var(--bg2)">'
+    +'<th style="padding:6px 8px;text-align:left;width:28%">Metric</th>'
+    +'<th style="padding:6px 8px;text-align:center;color:#9c9a92">No Grouping</th>'
+    +'<th style="padding:6px 8px;text-align:center;color:#534AB7">→ Beat Packing</th>'
+    +'<th style="padding:6px 8px;text-align:center;color:#0F6E56">∥ Continuous Flow</th>'
+    +'</tr></thead><tbody>'
+    +'<tr style="border-bottom:0.5px solid var(--bd)"><td style="padding:5px 8px;font-weight:600;color:var(--t2)">Sequence rows</td>'
+    +'<td style="padding:5px 8px;text-align:center">'+baseTrades.length+'</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#534AB7">'+bpSim.rows+'</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#0F6E56">'+cfSim.rows+'</td></tr>'
+    +'<tr style="border-bottom:0.5px solid var(--bd);background:var(--bg2)"><td style="padding:5px 8px;font-weight:600;color:var(--t2)">Total takt beats</td>'
+    +'<td style="padding:5px 8px;text-align:center">'+rawBeats+'</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#534AB7">'+bpSim.beats+' <span style="font-size:9px;color:#0F6E56">(\u2212'+(rawBeats-bpSim.beats)+')</span></td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#0F6E56">'+cfSim.beats+' <span style="font-size:9px;color:#0F6E56">(\u2212'+(rawBeats-cfSim.beats)+')</span></td></tr>'
+    +'<tr style="border-bottom:0.5px solid var(--bd)"><td style="padding:5px 8px;font-weight:600;color:var(--t2)">Groups created</td>'
+    +'<td style="padding:5px 8px;text-align:center">0</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#534AB7">'+bpSim.groups+' sequential</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#0F6E56">'+cfSim.groups+' concurrent</td></tr>'
+    +'<tr style="border-bottom:0.5px solid var(--bd);background:var(--bg2)"><td style="padding:5px 8px;font-weight:600;color:var(--t2)">Crew mobilisations</td>'
+    +'<td style="padding:5px 8px;text-align:center">'+baseTrades.length+'\u00d7'+LEVELS+'</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#534AB7">'+bpSim.rows+'\u00d7'+LEVELS+'</td>'
+    +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:#0F6E56">'+cfSim.rows+'\u00d7'+LEVELS+'</td></tr>'
+    +'<tr style="border-bottom:0.5px solid var(--bd)"><td style="padding:5px 8px;font-weight:600;color:var(--t2)">Idle beats</td>'
+    +'<td style="padding:5px 8px;text-align:center;color:#A32D2D">Many partial slots</td>'
+    +'<td style="padding:5px 8px;text-align:center;color:#BA7517">Gaps filled within beats</td>'
+    +'<td style="padding:5px 8px;text-align:center;color:#0F6E56">Zero inter-beat idle</td></tr>'
+    +'<tr style="border-bottom:0.5px solid var(--bd);background:var(--bg2)"><td style="padding:5px 8px;font-weight:600;color:var(--t2)">Stacking risk</td>'
+    +'<td style="padding:5px 8px;text-align:center;color:#A32D2D">High (many solo short trades)</td>'
+    +'<td style="padding:5px 8px;text-align:center;color:#BA7517">Low (sequential — one crew at a time)</td>'
+    +'<td style="padding:5px 8px;text-align:center;color:#185FA5">Monitor (parallel crews same floor)</td></tr>'
+    +'</tbody></table></div>';
+
+  var bpCard='<div style="border:1.5px solid #534AB7;border-radius:8px;padding:12px;background:#EEEDFE11">'
+    +'<div style="font-weight:700;font-size:12px;color:#3C3489;margin-bottom:8px">→ Beat Packing — Sequential Chains</div>'
+    +'<div style="font-size:11px;line-height:1.7;color:var(--t)">'
+    +'<b>Mechanism:</b> Chains short trades so their sum ≤ '+tk+'d (one beat). Trades execute one after another within the same beat slot.<br><br>'
+    +'<b>Best for:</b> Finishing trades in fixed order — doors, skirting, painting, sanitary wares, box-up works. Trades that are too short for a full beat individually but must stay in sequence.<br><br>'
+    +'<b>Key benefit:</b> One gang leader manages the packed chain. Fewer programme lines. Every beat is productive with no partial-slot waste.<br><br>'
+    +'<b>Risk:</b> One delayed trade in the chain loses the entire beat. Requires iron discipline on sequencing. Apply tight constraint-removal via LPS make-ready 3 weeks ahead.'
+    +'</div></div>';
+
+  var cfCard='<div style="border:1.5px solid #0F6E56;border-radius:8px;padding:12px;background:#E1F5EE11">'
+    +'<div style="font-weight:700;font-size:12px;color:#085041;margin-bottom:8px">\u2225 Continuous Flow — Concurrent Groups</div>'
+    +'<div style="font-size:11px;line-height:1.7;color:var(--t)">'
+    +'<b>Mechanism:</b> Groups parallel-compatible trades (MEP concealed works) into concurrent groups. Max duration ≤ '+tk+'d so the group fits in one beat. The next floor starts the moment this beat ends — zero inter-beat idle.<br><br>'
+    +'<b>Best for:</b> Concealed MEP roughing-in (water/sanitary/electrical piping) and installation trades that share the floor but do not conflict spatially.<br><br>'
+    +'<b>Key benefit:</b> Eliminates the waiting time between floors — the core Lean Construction flow principle. Reduces total beats from '+rawBeats+' to '+cfSim.beats+'.<br><br>'
+    +'<b>Risk:</b> Multiple trades on the same floor simultaneously requires strong coordination. Use the Resource Stacking tab to verify no gang conflicts.'
+    +'</div></div>';
+
+  var decNote=infoBox('#633806',
+    '<b>Which to apply on this project?</b> '
+    +'Use <b>Continuous Flow</b> for the rough-in / structure phase (pre-Drywall: MEP concealed, framing). '
+    +'Use <b>Beat Packing</b> for the fit-out / finishing phase (post-Drywall: doors, skirting, sanitary wares, painting). '
+    +'Applying both reduces this project\'s beat count from <b>'+rawBeats+' beats</b> to approximately <b>'+Math.min(bpSim.beats,cfSim.beats)+' beats</b>, '
+    +'saving approximately <b>'+(rawBeats-Math.min(bpSim.beats,cfSim.beats))+' beats \u00d7 '+tk+'d = '
+    +((rawBeats-Math.min(bpSim.beats,cfSim.beats))*tk)+'d per level</b>. '
+    +'Across '+LEVELS+' levels this compounds to a significant programme advantage.'
+  );
+
+  var sectionC=card('#534AB7','⚡',
+    'Beat Packing vs Continuous Flow — Strategy Comparison',
+    twoCol(bpCard,cfCard)+stratTbl+decNote
+  );
+
+  /* ── Assemble ── */
+  wrap.innerHTML='<div style="display:flex;flex-direction:column;gap:14px">'
+    +sectionA+sectionB+sectionC+'</div>';
+}
+
+
+function renderAll(){
+  renderSeqList();renderSeqDetail();
+  renderTakt();renderLoB();renderStacking();renderMatrix();renderCal();renderOpt();
+  renderHist();
+  flFilter=null; /* reset filter when rows change so list rebuilds */
+  buildFlowFilter();
+  /* renderFlow is called by showTab('flow') or when tab is already active */
+  var flowPanel=document.getElementById('tab-flow');
+  if(flowPanel&&flowPanel.classList.contains('active')) renderFlow();
+}
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+id).classList.add('active');
+  var tabs=['seq','takt','lob','stack','matrix','cal','opt','hist','flow','advisory'];
+  var _tab=document.querySelectorAll('.tab')[tabs.indexOf(id)];if(_tab)_tab.classList.add('active');
+  if(id==='flow'){buildFlowFilter();renderFlow();}if(id==='advisory')renderAdvisory();
+}
+window.addEventListener('resize',function(){renderTakt();renderLoB();renderStacking();renderMatrix();});
+renderAll();
+</script>
+</body>
+</html>
