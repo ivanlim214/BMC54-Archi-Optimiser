@@ -192,6 +192,7 @@ body{height:100vh;display:flex;flex-direction:column;overflow:hidden;font-family
       <div class="seq-hdr">
         <span>Drag to reorder · edit WD · select in group modes · red border = exceeds takt</span>
         <div style="flex:1"></div>
+        <button onclick="openAddTrade()" style="font-size:10px;padding:3px 9px;border-radius:5px;border:0.5px solid #185FA5;background:#EBF4FB;color:#185FA5;cursor:pointer;font-weight:600;flex-shrink:0">＋ Add Trade</button>
         <span style="display:flex;gap:5px;align-items:center;font-size:9px">
           <svg width="10" height="10" viewBox="0 0 10 10"><polygon points="5,1 9,9 1,9" fill="#0F6E56"/></svg><span style="color:#085041">concurrent</span>
           <svg width="10" height="10" viewBox="0 0 10 10" style="margin-left:4px"><polygon points="5,1 6.5,4 10,4.5 7.5,7 8.2,10 5,8.5 1.8,10 2.5,7 0,4.5 3.5,4" fill="#534AB7"/></svg><span style="color:#3C3489">sequential</span>
@@ -632,6 +633,17 @@ function renderSeqList(){
       var sb=document.createElement('button');sb.className='split-btn';sb.textContent='Split';
       sb.onclick=(function(ii){return function(e){e.stopPropagation();splitRow(ii);};})(i);
       hdr.appendChild(sb);
+    }
+
+    /* ── Delete button ── */
+    if(!mode){
+      var db2=document.createElement('button');
+      db2.title='Remove this trade from the sequence';
+      db2.style.cssText='font-size:10px;padding:1px 6px;border-radius:4px;border:0.5px solid #E24B4A;'
+        +'background:transparent;color:#E24B4A;cursor:pointer;flex-shrink:0;line-height:1.4;margin-left:2px;';
+      db2.textContent='\u2715 Del';
+      db2.onclick=(function(ii){return function(e){e.stopPropagation();deleteTrade(ii);};})(i);
+      hdr.appendChild(db2);
     }
 
     card.appendChild(hdr);
@@ -1102,77 +1114,268 @@ function mountTooltip(wrapId,tipId,canvas,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HD
 /* ═══════════════════════ RENDER TAKT PLAN ═══════════════════════ */
 function renderTakt(){
   buildLegend('takt-legend');
-  var ROW_H=parseInt(document.getElementById('tp-rh').value);
-  var PX_D=parseInt(document.getElementById('tp-px').value);
-  var lvlStep=parseInt(document.getElementById('tp-ls').value);
-  var glMode=document.getElementById('tp-gl').value;
-  var tk=getUserTakt(),LEVELS=getLevels();
-  var startDate=getStartDate();
+  var ROW_H   = parseInt(document.getElementById('tp-rh').value)||32;
+  var PX_D    = parseInt(document.getElementById('tp-px').value)||9;
+  var lvlStep = parseInt(document.getElementById('tp-ls').value)||1;
+  var tk      = getUserTakt();
+  var LEVELS  = getLevels();
+  var startDate = getStartDate();
 
-  /* ── Takt-driven starts: each row occupies ceil(dur/tk) beat slots ── */
-  var starts=computeTaktStarts(tk);
-  /* Total duration: last row's start + its beat-slots * tk + (LEVELS-1)*tk */
-  var lastSlots=Math.max(1,Math.ceil(rDur(rows[rows.length-1])/tk));
-  var totalWD2=starts[rows.length-1]+lastSlots*tk+(LEVELS-1)*tk;
+  /* Takt-driven starts: trade ri starts at beat ri on Level 1.
+     On Level L, the same trade starts at: starts[ri] + (L-1)*tk
+     Y-axis rows = levels (1 row per level), Level 1 at TOP.          */
+  var starts = computeTaktStarts(tk);
 
-  var levels=[];for(var l=1;l<=LEVELS;l+=lvlStep)levels.push(l);
-  var BRKT_H=12,LVL_W=46,HDR_H=56,FOOT_H=20;
-  var chartW=Math.ceil(totalWD2*PX_D),chartH=levels.length*(ROW_H+BRKT_H);
-  var W=LVL_W+chartW,H=HDR_H+chartH+FOOT_H;
-  var _cv=mkCanvas(W,H);var c=_cv.c,ctx=_cv.ctx;
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  var levels = [];
+  for(var l=1; l<=LEVELS; l+=lvlStep) levels.push(l);
 
-  /* ── Alternating takt beat columns ── */
-  var nBeats=Math.ceil(totalWD2/tk)+1;
-  for(var bt=0;bt<nBeats;bt++){
-    var bx1=LVL_W+bt*tk*PX_D, bx2=LVL_W+(bt+1)*tk*PX_D;
-    if(bt%2===0){ctx.fillStyle='rgba(0,0,0,.018)';ctx.fillRect(bx1,HDR_H,bx2-bx1,chartH);}
-    /* takt grid line */
-    ctx.strokeStyle='rgba(186,117,23,0.22)';ctx.lineWidth=0.8;ctx.setLineDash([3,4]);
-    ctx.beginPath();ctx.moveTo(bx1,HDR_H);ctx.lineTo(bx1,HDR_H+chartH);ctx.stroke();
+  /* Total timeline width covers last trade finishing on highest level */
+  var lastSlots = Math.max(1, Math.ceil(rDur(rows[rows.length-1]) / tk));
+  var totalWD   = starts[rows.length-1] + lastSlots*tk + (LEVELS-1)*tk;
+
+  /* Layout */
+  var LBL_W  = 64;
+  var HDR_H  = 52;
+  var FOOT_H = 22;
+  var PAD    = ROW_H >= 24 ? 2 : 1;
+  var chartH = levels.length * ROW_H;
+  var W = LBL_W + Math.ceil(totalWD * PX_D) + 4;
+  var H = HDR_H + chartH + FOOT_H;
+
+  var _cv = mkCanvas(W, H);
+  var c = _cv.c, ctx = _cv.ctx;
+
+  function tx(d)   { return LBL_W + d * PX_D; }
+  function rowY(li){ return HDR_H + li * ROW_H; }
+
+  /* ── Background ── */
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  /* ── Takt beat columns ── */
+  var nBeats = Math.ceil(totalWD / tk) + 2;
+  for(var bt=0; bt<nBeats; bt++){
+    var bx1=tx(bt*tk), bx2=tx((bt+1)*tk);
+    if(bt%2===0){
+      ctx.fillStyle='rgba(255,255,255,0.025)';
+      ctx.fillRect(bx1, HDR_H, bx2-bx1, chartH);
+    }
+    /* Beat divider */
+    ctx.strokeStyle='rgba(186,117,23,0.28)'; ctx.lineWidth=0.8; ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.moveTo(bx1,HDR_H); ctx.lineTo(bx1,HDR_H+chartH); ctx.stroke();
     ctx.setLineDash([]);
-    /* beat number label */
-    ctx.font='500 8px system-ui';ctx.fillStyle='rgba(99,56,6,0.55)';
-    ctx.textAlign='left';ctx.textBaseline='top';
-    ctx.fillText('B'+(bt+1),bx1+2,HDR_H+2);
   }
 
-  /* ── Week grid lines ── */
-  for(var d=0;d<=totalWD2;d+=WDW){
-    var x=LVL_W+d*PX_D;
-    ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=0.4;
-    ctx.beginPath();ctx.moveTo(x,HDR_H);ctx.lineTo(x,HDR_H+chartH);ctx.stroke();
+  /* ── Week grid ── */
+  for(var d=0; d<=totalWD; d+=WDW){
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.4;
+    ctx.beginPath(); ctx.moveTo(tx(d),HDR_H); ctx.lineTo(tx(d),HDR_H+chartH); ctx.stroke();
   }
 
-  /* ── Level row separators ── */
-  levels.forEach(function(_,li){
-    ctx.strokeStyle='rgba(0,0,0,.07)';ctx.lineWidth=0.5;
-    ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+li*(ROW_H+BRKT_H));ctx.lineTo(W,HDR_H+li*(ROW_H+BRKT_H));ctx.stroke();
+  /* ── Row separators ── */
+  for(var li=0; li<=levels.length; li++){
+    var ly=rowY(li);
+    ctx.strokeStyle = li%2===0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)';
+    ctx.lineWidth   = li%2===0 ? 0.7 : 0.35;
+    ctx.beginPath(); ctx.moveTo(0,ly); ctx.lineTo(W,ly); ctx.stroke();
+  }
+
+  /* ── Alternating level row bands ── */
+  levels.forEach(function(lvl, li){
+    if(li%2===0){
+      ctx.fillStyle='rgba(255,255,255,0.018)';
+      ctx.fillRect(LBL_W, rowY(li), W-LBL_W, ROW_H);
+    }
   });
 
-  drawTimeHeader(ctx,LVL_W,HDR_H,W,totalWD2,PX_D,startDate);
-  drawLevelCol(ctx,LVL_W,HDR_H,H,FOOT_H,chartH,BRKT_H,ROW_H,levels);
+  /* ── Trade bars: one per (trade × level) ── */
+  rows.forEach(function(r, ri){
+    var dur   = rDur(r);
+    var col   = tCol(r);
+    var over  = dur > tk;
+    var isCon = r.type==='con';
+    var isSeq = r.type==='seq';
 
-  /* ── Takt indicator bar at top (first beat width) ── */
-  var tx0=LVL_W,tx1=LVL_W+tk*PX_D;
-  ctx.fillStyle='rgba(239,159,39,0.18)';ctx.fillRect(tx0,HDR_H,tx1-tx0,7);
-  ctx.strokeStyle='#BA7517';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(tx0+1,HDR_H+3);ctx.lineTo(tx1-1,HDR_H+3);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(tx0+1,HDR_H+1);ctx.lineTo(tx0+1,HDR_H+6);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(tx1-1,HDR_H+1);ctx.lineTo(tx1-1,HDR_H+6);ctx.stroke();
-  ctx.font='600 7px system-ui';ctx.fillStyle='#633806';ctx.textAlign='center';ctx.textBaseline='top';
-  ctx.fillText('Takt='+tk+'d',(tx0+tx1)/2,HDR_H-9);
+    levels.forEach(function(lvl, li){
+      var xStart = starts[ri] + (lvl-1)*tk;
+      var x1  = tx(xStart);
+      var barW = Math.max(2, dur * PX_D);
+      var y   = rowY(li) + PAD;
+      var bh  = ROW_H - PAD*2;
+      var rad = Math.min(4, bh/2, barW/2);
 
-  drawBarsAndBrackets(ctx,levels,starts,tk,PX_D,ROW_H,BRKT_H,HDR_H,ROW_H>=26?2:1,LVL_W,glMode,false,startDate);
+      /* Glow */
+      ctx.shadowColor = col;
+      ctx.shadowBlur  = over ? 6 : 2;
 
-  /* ── Bottom axis line ── */
-  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(LVL_W,HDR_H+chartH);ctx.lineTo(W,HDR_H+chartH);ctx.stroke();
+      /* Rounded rect fill */
+      ctx.fillStyle   = col;
+      ctx.globalAlpha = over ? 1.0 : 0.85;
+      ctx.beginPath();
+      ctx.moveTo(x1+rad, y);
+      ctx.lineTo(x1+barW-rad, y);
+      ctx.quadraticCurveTo(x1+barW, y,    x1+barW, y+rad);
+      ctx.lineTo(x1+barW, y+bh-rad);
+      ctx.quadraticCurveTo(x1+barW, y+bh, x1+barW-rad, y+bh);
+      ctx.lineTo(x1+rad, y+bh);
+      ctx.quadraticCurveTo(x1, y+bh, x1, y+bh-rad);
+      ctx.lineTo(x1, y+rad);
+      ctx.quadraticCurveTo(x1, y,    x1+rad, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
 
+      /* Top highlight */
+      ctx.fillStyle='rgba(255,255,255,0.18)';
+      ctx.fillRect(x1+rad, y, barW-rad*2, Math.min(3, bh*0.3));
+
+      /* Group left stripe */
+      if(isCon){ ctx.fillStyle='rgba(15,110,86,0.9)';  ctx.fillRect(x1, y, 3, bh); }
+      if(isSeq){ ctx.fillStyle='rgba(83,74,183,0.9)';  ctx.fillRect(x1, y, 3, bh); }
+
+      /* Over-takt: white dashed + red border */
+      if(over){
+        var tkX = tx(xStart + tk);
+        if(tkX > x1 && tkX < x1+barW){
+          ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=1.2; ctx.setLineDash([2,2]);
+          ctx.beginPath(); ctx.moveTo(tkX, y+1); ctx.lineTo(tkX, y+bh-1); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        ctx.strokeStyle='#E24B4A'; ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.moveTo(x1+rad,y); ctx.lineTo(x1+barW-rad,y);
+        ctx.moveTo(x1+barW,y+rad); ctx.lineTo(x1+barW,y+bh-rad);
+        ctx.moveTo(x1+rad,y+bh); ctx.lineTo(x1+barW-rad,y+bh);
+        ctx.moveTo(x1,y+rad); ctx.lineTo(x1,y+bh-rad);
+        ctx.stroke();
+      }
+
+      /* Trade label */
+      if(barW > 18 && bh >= 9){
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x1+3, y, barW-6, bh); ctx.clip();
+        var lbl = barW > 65 ? r.name : (r.short || r.name);
+        if(barW <= 28) lbl = lbl.substring(0,5);
+        ctx.font='600 '+(bh>=16?'9':'8')+'px system-ui';
+        ctx.fillStyle='#fff';
+        ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText(lbl, x1+(isCon||isSeq?6:3), y+bh/2);
+        ctx.restore();
+      }
+    });
+  });
+
+  /* ── Left label column ── */
+  ctx.fillStyle='#16213e';
+  ctx.fillRect(0, HDR_H, LBL_W, chartH);
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(LBL_W,0); ctx.lineTo(LBL_W,H); ctx.stroke();
+
+  levels.forEach(function(lvl, li){
+    var cy = rowY(li) + ROW_H/2;
+    ctx.font='700 10px system-ui'; ctx.fillStyle='#4BA3E3';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Floor '+lvl, LBL_W/2, cy);
+  });
+
+  /* ── Time header (dark) ── */
+  ctx.fillStyle='#0f0f23';
+  ctx.fillRect(0, 0, W, HDR_H);
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.moveTo(0,HDR_H); ctx.lineTo(W,HDR_H); ctx.stroke();
+
+  /* Date ticks */
+  var dayStep = PX_D>8 ? WDW : WDW*2;
+  for(var d2=0; d2<=totalWD; d2+=dayStep){
+    var xd=tx(d2);
+    ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(xd,HDR_H-8); ctx.lineTo(xd,HDR_H); ctx.stroke();
+    var dd=addWD(startDate, Math.round(d2));
+    ctx.font='400 9px system-ui'; ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText(fmtDate(dd), xd, HDR_H-10);
+  }
+
+  /* Beat labels in header */
+  for(var bt2=0; bt2<nBeats; bt2++){
+    var bMid = tx(bt2*tk + tk/2);
+    if(bMid < W-10){
+      ctx.font='600 8px system-ui'; ctx.fillStyle='rgba(239,159,39,0.7)';
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText('B'+(bt2+1), bMid, 2);
+    }
+  }
+
+  /* Takt indicator bar */
+  var tx0=LBL_W, tx1=LBL_W+tk*PX_D;
+  ctx.fillStyle='rgba(239,159,39,0.22)';
+  ctx.fillRect(tx0, HDR_H-14, tx1-tx0, 12);
+  ctx.strokeStyle='#BA7517'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(tx0+1,HDR_H-8); ctx.lineTo(tx1-1,HDR_H-8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx0+1,HDR_H-14); ctx.lineTo(tx0+1,HDR_H-2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx1-1,HDR_H-14); ctx.lineTo(tx1-1,HDR_H-2); ctx.stroke();
+  ctx.font='700 8px system-ui'; ctx.fillStyle='#EF9F27';
+  ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillText('\u21d4 Takt='+tk+'d', (tx0+tx1)/2, HDR_H-16);
+
+  /* Legend row */
+  ctx.font='400 8px system-ui'; ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('Each row = 1 floor  \u2022  Trades flow floor \u2192 floor, each offset by 1 takt beat', LBL_W+8, HDR_H/2+16);
+
+  /* ── Footer ── */
+  ctx.fillStyle='#0f0f23';
+  ctx.fillRect(0, H-FOOT_H, W, FOOT_H);
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.5;
+  ctx.beginPath(); ctx.moveTo(0,H-FOOT_H); ctx.lineTo(W,H-FOOT_H); ctx.stroke();
   var viols=getTaktViolations(tk);
-  drawFooter(ctx,W,H,FOOT_H,LVL_W,'Takt='+tk+'d · '+rows.length+' rows · '+LEVELS+' levels · '+(viols.length>0?'⚠ '+viols.length+' exceed takt':'✓ all fit')+' · each trade = 1 takt beat · B#=beat number');
-  mountTooltip('takt-wrap','takt-tip',c,levels,starts,tk,ROW_H,BRKT_H,LVL_W,HDR_H,chartH,PX_D,W,H,1,startDate);
+  ctx.font='400 8px system-ui'; ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(
+    'Takt='+tk+'d  \u00b7  '+LEVELS+' floors  \u00b7  '+rows.length+' trades  \u00b7  '
+    +(viols.length>0?'\u26a0 '+viols.length+' trade(s) exceed takt':'\u2713 all trades within takt'),
+    LBL_W+6, H-FOOT_H/2
+  );
+
+  /* ── Mount ── */
+  var wrap=document.getElementById('takt-wrap');
+  var old=wrap.querySelector('canvas');
+  if(old) wrap.removeChild(old);
+  wrap.appendChild(c);
+
+  /* ── Tooltip ── */
+  var tip=document.getElementById('takt-tip');
+  c.onmousemove=function(e){
+    var rect=c.getBoundingClientRect();
+    var mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    if(mx<LBL_W||my<HDR_H||my>HDR_H+chartH){tip.style.display='none';return;}
+    var li=Math.floor((my-HDR_H)/ROW_H);
+    if(li<0||li>=levels.length){tip.style.display='none';return;}
+    var lvl=levels[li];
+    var hd=(mx-LBL_W)/PX_D;
+    var found=null;
+    for(var ri2=rows.length-1;ri2>=0;ri2--){
+      var us=starts[ri2]+(lvl-1)*tk;
+      var ue=us+rDur(rows[ri2]);
+      if(hd>=us-0.3&&hd<=ue+0.3){found={r:rows[ri2],ri:ri2,us:us,ue:ue};break;}
+    }
+    if(!found){tip.style.display='none';return;}
+    var r3=found.r,dur3=rDur(r3);
+    var sd=addWD(startDate,Math.round(found.us)),ed=addWD(startDate,Math.round(found.ue));
+    tip.innerHTML='<b>'+r3.name+'</b>'
+      +'<br>Floor <b>'+lvl+'</b>  \u00b7  Beat <b>B'+(Math.round(found.us/tk)+1)+'</b>'
+      +'<br>Start: <b>'+fmtDate(sd)+'</b>  \u2192  Finish: <b>'+fmtDate(ed)+'</b>'
+      +'<br>'+dur3+'d / '+tk+'d takt '
+      +(dur3>tk?'<span style="color:#E24B4A">\u26a0 exceeds by '+(dur3-tk)+'d</span>'
+               :'<span style="color:#4ade80">\u2713 OK</span>');
+    tip.style.display='block';
+    tip.style.left=Math.min(mx+14,rect.width-250)+'px';
+    tip.style.top=Math.max(0,my-10)+'px';
+  };
+  c.onmouseleave=function(){tip.style.display='none';};
 }
+
+
 
 /* ═══════════════════════ RENDER LOB ═══════════════════════ */
 function renderLoB(){
@@ -2418,43 +2621,123 @@ function importExcel(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-      var wb=XLSX.read(e.target.result, {type:'binary'});
-      /* look for "Sequence" sheet */
-      var wsName=wb.SheetNames.indexOf('Sequence')>=0?'Sequence':wb.SheetNames[0];
+      var arr=new Uint8Array(e.target.result);
+      var wb=XLSX.read(arr,{type:'array'});
+      var wsName='Sequence';
+      if(wb.SheetNames.indexOf(wsName)<0) wsName=wb.SheetNames[0];
       var ws=wb.Sheets[wsName];
-      var data=XLSX.utils.sheet_to_json(ws, {header:1});
-      if(data.length<2){alert('No data found in "'+wsName+'" sheet.');return;}
-      /* parse rows: expect col 0=#, col 1=Type, col 2=Name, col 3=Duration */
-      var hdr=data[0].map(function(h){return String(h).toLowerCase();});
-      var iName=hdr.indexOf('name'); if(iName<0)iName=2;
-      var iDur=3;for(var _fi=0;_fi<hdr.length;_fi++){if(hdr[_fi].indexOf('dur')>=0){iDur=_fi;break;}}
-      var iAwc=4;for(var _fi2=0;_fi2<hdr.length;_fi2++){if(hdr[_fi2].indexOf('awc')>=0){iAwc=_fi2;break;}}
-      var imported=[];
+      var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(data.length<2){alert('No data found in sheet "'+wsName+'".');return;}
+
+      /* Detect columns by header */
+      var hdr=data[0].map(function(h){return String(h).toLowerCase().trim();});
+      var iType=1,iName=2,iDur=3,iAwc=4,iMem=6; /* defaults match export order */
+      for(var ci=0;ci<hdr.length;ci++){
+        if(hdr[ci]==='type')            iType=ci;
+        else if(hdr[ci]==='name')       iName=ci;
+        else if(hdr[ci].indexOf('dur')>=0) iDur=ci;
+        else if(hdr[ci]==='awc')        iAwc=ci;
+        else if(hdr[ci].indexOf('member')>=0) iMem=ci;
+      }
+
+      /* Resolve trade by name against BASE */
+      function resolve(nm,dur2){
+        for(var bi=0;bi<BASE.length;bi++){
+          if(BASE[bi].name===nm||BASE[bi].short===nm){
+            var b=BASE[bi];
+            return {id:b.id,name:b.name,short:b.short,dur:parseFloat(dur2)||b.dur,awc:b.awc};
+          }
+        }
+        return {id:8000+Math.random()*999|0,name:nm,short:nm.substr(0,14),
+          dur:parseFloat(dur2)||1,awc:false};
+      }
+
+      /* Parse "Name(Nd) | Name2(M2d)" members string */
+      function parseM(s){
+        s=String(s).trim();
+        if(!s||s==='nan'||s==='') return [];
+        var out=[];
+        s.split('|').forEach(function(part){
+          part=part.trim();
+          var m=part.match(/^(.+)\((\d+(?:\.\d+)?)d\)$/);
+          if(m) out.push(resolve(m[1].trim(),parseFloat(m[2])));
+        });
+        return out;
+      }
+
+      /* Build rows array */
+      var imp=[];
       for(var ri=1;ri<data.length;ri++){
         var row=data[ri];
-        if(!row||!row[iName]) continue;
-        var name=String(row[iName]).trim();
-        var dur=parseFloat(row[iDur])||1;
-        var awc=(String(row[iAwc]||'').toLowerCase()==='yes'||String(row[iAwc]||'').toLowerCase()==='awc'||String(row[iAwc]||'')==='true');
-        /* match to BASE trade by name for id/short, else create new */
-        var base=null;
-        for(var bi=0;bi<BASE.length;bi++){if(BASE[bi].name===name){base=BASE[bi];break;}}
-        var t=base
-          ? {type:'trade',id:base.id,name:base.name,short:base.short,dur:dur,awc:base.awc,selected:false}
-          : {type:'trade',id:9000+ri,name:name,short:name.substring(0,12),dur:dur,awc:awc,selected:false};
-        imported.push(t);
+        if(!row||!row.length) continue;
+        var nm=String(row[iName]||'').trim();
+        if(!nm||nm==='nan') continue;
+        var typ=String(row[iType]||'trade').trim().toLowerCase();
+        var dur=row[iDur];
+        var mStr=row[iMem]||'';
+
+        if(typ==='con'||typ==='seq'){
+          var mems=parseM(mStr);
+          if(!mems.length){
+            /* fall back to solo */
+            var fb=resolve(nm,dur);
+            imp.push({type:'trade',id:fb.id,name:fb.name,short:fb.short,
+              dur:fb.dur,awc:fb.awc,selected:false});
+            continue;
+          }
+          var gDur=typ==='con'
+            ? Math.max.apply(null,mems.map(function(m){return m.dur;}))
+            : mems.reduce(function(s2,m){return s2+m.dur;},0);
+          var expD=parseFloat(dur);
+          if(expD>0) gDur=expD;
+          var tag=typ==='con'?'\u2225':'\u2192';
+          imp.push({type:typ,id:'g_'+ri,
+            name:nm,
+            short:tag+' '+mems[0].short+'+'+(mems.length-1),
+            dur:gDur,
+            awc:mems.some(function(m){return m.awc;}),
+            members:mems,selected:false});
+        } else {
+          var t=resolve(nm,dur);
+          imp.push({type:'trade',id:t.id,name:t.name,short:t.short,
+            dur:t.dur,awc:t.awc,selected:false});
+        }
       }
-      if(imported.length===0){alert('Could not parse any trades from the sheet.');return;}
-      if(!confirm('Replace current sequence with '+imported.length+' imported trades?')) return;
-      rows=imported;
-      renderAll(); showTab('seq');
-      alert('Imported '+imported.length+' trades from "'+wsName+'".');
+
+      if(!imp.length){alert('No trades found in the file.');return;}
+      var nG=imp.filter(function(r){return r.type!=='trade';}).length;
+      var nT=imp.length-nG;
+
+      /* Apply immediately — no confirm blocker */
+      rows=imp;
+      flFilter=null;
+
+      /* Show seq tab FIRST so the DOM is visible when we render */
+      showTab('seq');
+
+      /* Scroll list to top */
+      var sl=document.getElementById('seq-list');
+      if(sl) sl.scrollTop=0;
+
+      /* Render sequence editor immediately */
+      renderSeqList();
+      renderSeqDetail();
+
+      /* Then render other tabs in background */
+      setTimeout(function(){
+        renderTakt();renderLoB();renderStacking();renderMatrix();
+        renderCal();renderOpt();renderHist();
+        buildFlowFilter();
+      },50);
+
+      alert('Imported: '+nT+' solo trades + '+nG+' groups = '+imp.length+' rows\n\nSequence Editor has been updated.');
     } catch(err){
-      alert('Import failed: '+err.message);
+      alert('Import error: '+err.message);
+      console.error(err);
     }
     input.value='';
   };
-  reader.readAsBinaryString(file);
+  reader.readAsArrayBuffer(file);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2907,6 +3190,151 @@ function renderAdvisory(){
 }
 
 
+/* ═══════════════════════════════════════════════════════════════
+   ADD TRADE MODAL
+═══════════════════════════════════════════════════════════════ */
+function openAddTrade(){
+  atFilterBase();
+  document.getElementById('add-trade-modal').style.display='flex';
+  var si=document.getElementById('at-search');
+  if(si){si.value='';atFilterBase();}
+}
+function closeAddTrade(){
+  document.getElementById('add-trade-modal').style.display='none';
+}
+
+function atShowTab(t){
+  document.getElementById('at-base-pane').style.display=t==='base'?'block':'none';
+  document.getElementById('at-custom-pane').style.display=t==='custom'?'block':'none';
+  var b=document.getElementById('at-tab-base');
+  var c=document.getElementById('at-tab-custom');
+  b.style.borderBottomColor=t==='base'?'#185FA5':'transparent';
+  b.style.color=t==='base'?'#185FA5':'var(--t2)';
+  b.style.fontWeight=t==='base'?'700':'400';
+  c.style.borderBottomColor=t==='custom'?'#185FA5':'transparent';
+  c.style.color=t==='custom'?'#185FA5':'var(--t2)';
+  c.style.fontWeight=t==='custom'?'700':'400';
+}
+
+function atFilterBase(){
+  var q=(document.getElementById('at-search')||{value:''}).value.toLowerCase().trim();
+  var list=document.getElementById('at-base-list');
+  if(!list) return;
+  list.innerHTML='';
+  /* Show BASE trades plus any custom trades not currently in rows */
+  var inRows={};
+  rows.forEach(function(r){
+    if(r.type==='trade') inRows[r.id]=true;
+    if(r.members) r.members.forEach(function(m){inRows[m.id]=true;});
+  });
+  BASE.forEach(function(t){
+    if(q && t.name.toLowerCase().indexOf(q)<0) return;
+    var alreadyIn=inRows[t.id];
+    var col=PAL[t.id%PAL.length];
+    var item=document.createElement('div');
+    item.style.cssText='display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;'
+      +'cursor:pointer;border:0.5px solid var(--bd);background:var(--bg);'
+      +(alreadyIn?'opacity:0.5;':'');
+    item.title=alreadyIn?'Already in sequence (click to add again)':'Click to add';
+
+    /* swatch */
+    var sw=document.createElement('span');
+    sw.style.cssText='width:10px;height:10px;border-radius:2px;flex-shrink:0;background:'+col;
+    item.appendChild(sw);
+
+    /* name */
+    var nm=document.createElement('span');
+    nm.style.cssText='flex:1;font-size:11px;color:var(--t)';
+    nm.textContent=t.name;
+    item.appendChild(nm);
+
+    /* badges */
+    if(t.awc){
+      var ab=document.createElement('span');
+      ab.style.cssText='font-size:9px;padding:1px 5px;border-radius:8px;background:#E6F1FB;color:#0C447C;font-weight:700;flex-shrink:0';
+      ab.textContent='AWC';
+      item.appendChild(ab);
+    }
+    var db=document.createElement('span');
+    db.style.cssText='font-size:10px;color:var(--t2);flex-shrink:0';
+    db.textContent=t.dur+'d';
+    item.appendChild(db);
+
+    /* Add button */
+    var btn=document.createElement('button');
+    btn.style.cssText='font-size:10px;padding:2px 8px;border-radius:4px;border:none;'
+      +'background:#185FA5;color:#fff;cursor:pointer;flex-shrink:0;font-weight:600';
+    btn.textContent='＋ Add';
+    btn.onclick=(function(trade){return function(ev){
+      ev.stopPropagation();
+      atInsertTrade({type:'trade',id:trade.id,name:trade.name,short:trade.short,
+        dur:trade.dur,awc:trade.awc,selected:false},
+        document.getElementById('at-pos').value);
+    };})(t);
+    item.appendChild(btn);
+    list.appendChild(item);
+  });
+}
+
+function atInsertTrade(newRow, pos){
+  var idx=rows.length; /* default: end */
+  if(pos==='start'){
+    idx=0;
+  } else if(pos==='after'){
+    /* insert after first selected row, or after last row */
+    for(var i=rows.length-1;i>=0;i--){
+      if(rows[i].selected){idx=i+1;break;}
+    }
+  }
+  rows.splice(idx,0,newRow);
+  renderSeqList();
+  renderSeqDetail();
+  /* highlight newly added row briefly */
+  setTimeout(function(){
+    var sl=document.getElementById('seq-list');
+    if(!sl) return;
+    var cards=sl.querySelectorAll('.row');
+    if(cards[idx]){
+      cards[idx].style.boxShadow='0 0 0 2px #185FA5';
+      setTimeout(function(){cards[idx].style.boxShadow='';},1200);
+      cards[idx].scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+  },30);
+}
+
+function addCustomTrade(){
+  var nm=(document.getElementById('at-cname').value||'').trim();
+  var dur=parseFloat(document.getElementById('at-cdur').value)||1;
+  var awc=document.getElementById('at-cawc').value==='true';
+  var pos=document.getElementById('at-cpos').value;
+  if(!nm){alert('Please enter a trade name.');return;}
+  var newRow={type:'trade',id:9000+Math.floor(Math.random()*8999),
+    name:nm,short:nm.substring(0,14),dur:dur,awc:awc,selected:false};
+  atInsertTrade(newRow,pos);
+  document.getElementById('at-cname').value='';
+}
+
+/* Close modal on backdrop click — deferred until DOM ready */
+window.addEventListener('load',function(){
+  var atm=document.getElementById('add-trade-modal');
+  if(atm) atm.addEventListener('click',function(e){if(e.target===this)closeAddTrade();});
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   DELETE TRADE
+═══════════════════════════════════════════════════════════════ */
+function deleteTrade(i){
+  var r=rows[i];
+  var label=r.name+(r.members?' ('+r.members.length+' members)':'');
+  if(!confirm('Remove "'+label+'" from the sequence?\n\n'
+    +(r.members?'This will also remove all '+r.members.length+' member trades in this group.\n':'')
+    +'The BASE trade data is not affected — you can re-add it anytime.')) return;
+  rows.splice(i,1);
+  renderSeqList();
+  renderSeqDetail();
+}
+
+
 function renderAll(){
   renderSeqList();renderSeqDetail();
   renderTakt();renderLoB();renderStacking();renderMatrix();renderCal();renderOpt();
@@ -2928,5 +3356,77 @@ function showTab(id){
 window.addEventListener('resize',function(){renderTakt();renderLoB();renderStacking();renderMatrix();});
 renderAll();
 </script>
+
+<!-- ADD TRADE MODAL -->
+<div id="add-trade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--bg);border-radius:12px;padding:20px 22px;width:420px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.35);border:0.5px solid var(--bd)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0;font-size:14px;color:var(--t)">＋ Add Trade to Sequence</h3>
+      <button onclick="closeAddTrade()" style="border:none;background:none;font-size:18px;cursor:pointer;color:var(--t2);line-height:1">&times;</button>
+    </div>
+
+    <!-- Tabs: Pick from BASE | Custom -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:12px">
+      <button id="at-tab-base" onclick="atShowTab('base')"
+        style="flex:1;padding:6px;font-size:11px;border:none;border-bottom:2px solid #185FA5;background:none;cursor:pointer;color:#185FA5;font-weight:700">From BASE trades</button>
+      <button id="at-tab-custom" onclick="atShowTab('custom')"
+        style="flex:1;padding:6px;font-size:11px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;color:var(--t2)">Custom trade</button>
+    </div>
+
+    <!-- BASE trades list -->
+    <div id="at-base-pane">
+      <input id="at-search" type="text" placeholder="Search trade name…" oninput="atFilterBase()"
+        style="width:100%;box-sizing:border-box;padding:6px 9px;font-size:11px;border:0.5px solid var(--bd2);border-radius:5px;background:var(--bg);color:var(--t);margin-bottom:8px">
+      <div style="font-size:10px;color:var(--t2);margin-bottom:4px">Insert position:
+        <select id="at-pos" style="font-size:10px;padding:2px 4px;border-radius:3px;border:0.5px solid var(--bd2);background:var(--bg);color:var(--t)">
+          <option value="end">End of sequence</option>
+          <option value="start">Start of sequence</option>
+          <option value="after">After selected row</option>
+        </select>
+      </div>
+      <div id="at-base-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:3px"></div>
+    </div>
+
+    <!-- Custom trade form -->
+    <div id="at-custom-pane" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:3px">Trade name *</label>
+          <input id="at-cname" type="text" placeholder="e.g. Specialist Coating"
+            style="width:100%;box-sizing:border-box;padding:6px 9px;font-size:12px;border:0.5px solid var(--bd2);border-radius:5px;background:var(--bg);color:var(--t)">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:3px">Duration (d) *</label>
+            <input id="at-cdur" type="number" min="0.5" max="60" step="0.5" value="3"
+              style="width:100%;box-sizing:border-box;padding:6px 9px;font-size:12px;border:0.5px solid var(--bd2);border-radius:5px;background:var(--bg);color:var(--t)">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:3px">AWC sub-con?</label>
+            <select id="at-cawc"
+              style="width:100%;box-sizing:border-box;padding:6px 9px;font-size:12px;border:0.5px solid var(--bd2);border-radius:5px;background:var(--bg);color:var(--t)">
+              <option value="false">No (own trade)</option>
+              <option value="true">Yes (AWC sub-con)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:3px">Insert position</label>
+          <select id="at-cpos"
+            style="width:100%;box-sizing:border-box;padding:6px 9px;font-size:12px;border:0.5px solid var(--bd2);border-radius:5px;background:var(--bg);color:var(--t)">
+            <option value="end">End of sequence</option>
+            <option value="start">Start of sequence</option>
+            <option value="after">After selected row</option>
+          </select>
+        </div>
+        <button onclick="addCustomTrade()"
+          style="width:100%;padding:8px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          Add to Sequence
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
